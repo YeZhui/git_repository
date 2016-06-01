@@ -1,4 +1,3 @@
-#include "BaseLog.h"
 #include "PrintLog.h"
 
 CPrintLog::CPrintLog()

@@ -1,4 +1,3 @@
-#include "BaseLog.h"
 #include "SysLog.h"
 
 CSysLog::CSysLog()

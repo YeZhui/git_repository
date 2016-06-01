@@ -1,6 +1,8 @@
 #ifndef __SYS_LOG_H_
 #define __SYS_LOG_H_
 
+#include "BaseLog.h"
+
 class CSysLog : public CBaseLog
 {
 public:
