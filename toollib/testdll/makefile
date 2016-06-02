@@ -1,9 +1,9 @@
 src=$(wildcard *.cpp)
 obj=$(patsubst %.cpp,%.o,$(src))
-dll_LIB=-llog
+dll_LIB=-llog -len_decrypt
 CC=g++ -g
 dest=main
-dll_PATH=../log
+dll_PATH=-L../log  -L../en_decrypt
 
 all:$(dest)
 
@@ -11,7 +11,7 @@ all:$(dest)
 	$(CC) -c $< $(PIC)
 
 $(dest):$(obj)
-	$(CC) -o $@ $^ $(dll_LIB) -L$(dll_PATH)
+	$(CC) -o $@ $^ $(dll_LIB) $(dll_PATH)
 
 clean:
 	rm -f *.o $(dest)
