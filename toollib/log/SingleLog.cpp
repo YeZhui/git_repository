@@ -11,12 +11,12 @@ namespace SingleLog
 
 	static CBaseLog *baseLog = NULL;
 
-	int SingleLog_Init(const char p_cFileType)
+	int Init(const char p_cFileType)
 	{
 		pthread_t t_read;
 		int iRet = 0;
 
-		SingleLog_Delete();
+		Delete();
 
 		if (p_cFileType == 'F' || p_cFileType == 'f')
 		{
@@ -46,7 +46,7 @@ namespace SingleLog
 		return 0;
 	}
 
-	int SingleLog_WriteLog(int p_iLevel, const char* p_szFileName, int p_iLine, const char* p_szMsg, ...)
+	int WriteLog(int p_iLevel, const char* p_szFileName, int p_iLine, const char* p_szMsg, ...)
 	{
 		char       szLog[4096] = {0};
 		char 	   szCurTime[64] = {0};
@@ -86,7 +86,7 @@ namespace SingleLog
 		return baseLog->Write(szLog);
 	}
 
-	void SingleLog_Delete()
+	void Delete()
 	{
 		if (baseLog != NULL)
 		{

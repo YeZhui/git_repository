@@ -3,7 +3,7 @@ obj=$(patsubst %.cpp,%.o,$(src))
 PIC=-fPIC
 dll_LIB=-shared -lpthread
 CC=g++ -g
-dest=liblog.so
+dest=liben_decrypt.so
 
 all:$(dest)
 
