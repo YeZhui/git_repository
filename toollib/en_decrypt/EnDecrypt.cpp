@@ -95,6 +95,7 @@ namespace En_Decrypt
 
 	int Md5Encrypt(const char *p_szSrcStr, int p_iSrcLen, char *p_szMd5Str, int p_iMd5Len)
 	{
+
 	}
 
 	int SimpleEncrypt(int p_iSrcText, int p_iKey)
