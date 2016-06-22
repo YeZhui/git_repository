@@ -128,7 +128,7 @@ void CIni::Init(const string p_strFileName)
 
 	inFile.close();
 
-	TraversalMap();
+	//TraversalMap();
 }
 
 //去掉头尾空格、换行
