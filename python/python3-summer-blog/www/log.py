@@ -15,16 +15,6 @@ def logConfig(filename):
 	log = logging.getLogger('')
 	log.addHandler(rtHandler)
 
-def logOutput(sql,args=(),level='debug'):
-	if level == 'debug':
-		logging.debug('SQL: %s' %(sql))
-	elif level == 'info':
-		logging.info('SQL: %s' %(sql))
-	elif level == 'warning':
-		logging.warning('SQL: %s' %(sql))
-	else:
-		logging.error('SQL: %s' %(sql))
-
 if __name__ == '__main__':
 	logConfig('my.log')
 	logging.debug('This is debug message')
