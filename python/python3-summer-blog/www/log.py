@@ -8,7 +8,7 @@ def logConfig(filename):
 		format = '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
 	#定义最多备份5个日志文件，每个日志文件最大10M
 	rtHandler = RotatingFileHandler(filename, mode='a', maxBytes=10*1024*1024, backupCount=100, encoding='utf-8')
-	#只有错误日志才写入文件
+	#只有警告级别以上日志才写入文件
 	rtHandler.setLevel(logging.WARNING)
 	formatter = logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
 	rtHandler.setFormatter(formatter)

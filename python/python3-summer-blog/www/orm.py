@@ -1,10 +1,10 @@
 # -*-coding:utf-8 -*-
-import asyncio,log
+import asyncio,log,logging
 import aiomysql
 
-logConfig('error.log')
+log.logConfig('error.log')
 
-@asyncio.coroutine
+@asyncio.coroutine #标记为一个协程
 def create_pool(loop, **kw):
 	logging.debug('create database connection pool...')
 	#定义全局变量
@@ -20,6 +20,13 @@ def create_pool(loop, **kw):
 		maxsize = kw.get('maxsize', 10),
 		minsize = kw.get('minsize', 1),
 		loop =loop)
+
+@asyncio.coroutine
+def destory_pool():
+	global __pool
+	if __pool is not None:
+		__pool.close()
+		yield from __pool.wait_closed()
 
 @asyncio.coroutine
 def select(sql, args, size=None):
@@ -50,6 +57,12 @@ def execute(sql, args):
 			raise
 		return affected
 
+def create_args_string(num):
+	L = []
+	for n in range(num):
+		L.append('?')
+	return (','.join(L))
+
 #Model类
 class ModelMetaclass(type):
 	def __new__(cls, name, bases, attrs):
@@ -72,7 +85,7 @@ class ModelMetaclass(type):
 				else:
 					fields.append(k)
 
-		if not promaryKey:
+		if not primaryKey:
 			raise RuntimeError('Primary key not found.')
 		for k in mappings.keys():
 			attrs.pop(k)
@@ -107,8 +120,8 @@ class Model(dict, metaclass=ModelMetaclass):
 		value = getattr(self, key, None)
 		if value is None:
 			field = self.__mappings__[key]
-			if field default is not None:
-				value = field.default() if callable(field default) else field default
+			if field.default is not None:
+				value = field.default() if callable(field.default) else field.default
 				logging.debug('using default value for %s: %s' % (key, str(value)))
 				setattr(self, key, value)
 		return value
@@ -117,7 +130,7 @@ class Model(dict, metaclass=ModelMetaclass):
 	@asyncio.coroutine
 	def find(cls, pk):
 		'find object my primary key.'
-		rs = yield.from select('%s where %s=?', % (cls.__select, cla.__primary_key__), [pk], 1)
+		rs = yield from select('%s where %s=?' % (cls.__select__, cls.__primary_key__), pk, 1)
 		if len(rs) == 0:
 			return None
 		return cls(**rs[0])
@@ -130,7 +143,61 @@ class Model(dict, metaclass=ModelMetaclass):
 		if rows != 1:
 			logging.error('failed to insert record:affected rows: %s' % rows)
 
-#Field类
+	@asyncio.coroutine
+	def update(self):
+		args = list(map(self.getValue, self.__fields__))
+		args.append(self.getValue(self.__primary_key__))
+		logging.debug(args)
+		rows = yield from execute(self.__update__, args)
+		if rows != 1:
+			logging.error('failed to update field:%s, rows:%s' % (id,rows))
+	
+	@asyncio.coroutine
+	def remove(self):
+		args = list(map(self.getValue, self.__fields__))
+		rows = yield from execute(self.__delete__, args)
+		if rows != 1:
+			logging.error('failed to delete by primary key')
+
+	@classmethod
+	@asyncio.coroutine
+	def findAll(cls, where=None, args=None, **kw):
+		sql = [cls.__select__]
+		if where:
+			sql.append('where')
+			sql.append(where)
+		if args is None:
+			args = []
+		orderBy = kw.get('orderBy', None)
+		if orderBy:
+			sql.append('order by')
+			sql.append(orderBy)
+		limit = kw.get('limit', None)
+		if limit is not None:
+			sql.append('limit')
+			if isinstance(limit, int):
+				sql.append('?')
+				args.append(limit)
+			elif isinstance(limit, tuple) and len(limit) == 2:
+				sql.append('?,?')
+				args.extend(limit)
+			else:
+				raise ValueError('Invalid limit value:%s' % str(limit))
+		rs = yield from select(' '.join(sql), args)
+		return [cls(**r) for r in rs]
+
+	@classmethod
+	@asyncio.coroutine
+	def findNumber(cls, selectField, where=None, args=None):
+		sql = ['select %s _num_ from `%s`' % (selectField, cls.__table__)]
+		if where:
+			sql.append('where')
+			sql.append(where)
+		rs = yield from select(' '.join(sql), args, 1)
+		if len(rs) == 0:
+			return None
+		return rs[0]['_num_']
+
 class Field(object):
 	def __init__(self, name, column_type, primary_key, default):
 		self.name = name
@@ -142,7 +209,22 @@ class Field(object):
 		return '<%s, %s:%s>' % (self.__class__.__name__, self.column_type, self.name)
 
 class StringField(Field):
-	def __init__(self, name=None, primary_key = False, default=None, column_ttype='varchar(100)'):
+	def __init__(self, name=None, primary_key = False, default=None, column_type='varchar(100)'):
 		super().__init__(name, column_type, primary_key, default)
 
-	
+class IntegerField(Field):
+	def __init__(self, name=None, primary_key = False, default=None, column_type='int(4)'):
+		super().__init__(name, column_type, primary_key, default)
+
+class BooleanField(Field):
+	def __init__(self, name=None, primary_key = False, default=0, column_type='bool'):
+		super().__init__(name, column_type, primary_key, default)
+
+class DecimalField(Field):
+	def __init__(self, name=None, primary_key = False, default=None, column_type='float'):
+		super().__init__(name, column_type, primary_key, default)
+
+class TextField(Field):
+	def __init__(self, name=None, primary_key = False, default=None, column_type='text'):
+		super().__init__(name, column_type, primary_key, default)
+
