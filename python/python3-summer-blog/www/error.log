@@ -2849,3 +2849,79 @@ Traceback (most recent call last):
   File "/home/pycode/python3-summer-blog/www/handlers.py", line 86, in login
     '__user__':request.__user__
 AttributeError: 'Request' object has no attribute '__user__'
+2017-03-30 14:41:06,696 web_server.py[line:88] ERROR Error handling request
+Traceback (most recent call last):
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/aiohttp/web_server.py", line 62, in handle_request
+    resp = yield from self._handler(request)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/aiohttp/web.py", line 270, in _handle
+    resp = yield from handler(request)
+  File "app.py", line 35, in logger
+    return (yield from handler(request))
+  File "app.py", line 73, in response
+    resp = web.Response(body=app['__templating__'].get_template(template).render(**r).encode('utf-8'))
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/environment.py", line 830, in get_template
+    return self._load_template(name, self.make_globals(globals))
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/environment.py", line 804, in _load_template
+    template = self.loader.load(self, name, globals)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/loaders.py", line 113, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/loaders.py", line 175, in get_source
+    contents = f.read().decode(self.encoding)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb1 in position 48: invalid start byte
+2017-03-30 14:41:07,548 web_server.py[line:88] ERROR Error handling request
+Traceback (most recent call last):
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/aiohttp/web_server.py", line 62, in handle_request
+    resp = yield from self._handler(request)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/aiohttp/web.py", line 270, in _handle
+    resp = yield from handler(request)
+  File "app.py", line 35, in logger
+    return (yield from handler(request))
+  File "app.py", line 73, in response
+    resp = web.Response(body=app['__templating__'].get_template(template).render(**r).encode('utf-8'))
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/environment.py", line 830, in get_template
+    return self._load_template(name, self.make_globals(globals))
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/environment.py", line 804, in _load_template
+    template = self.loader.load(self, name, globals)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/loaders.py", line 113, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/loaders.py", line 175, in get_source
+    contents = f.read().decode(self.encoding)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb1 in position 48: invalid start byte
+2017-03-30 14:41:08,983 web_server.py[line:88] ERROR Error handling request
+Traceback (most recent call last):
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/aiohttp/web_server.py", line 62, in handle_request
+    resp = yield from self._handler(request)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/aiohttp/web.py", line 270, in _handle
+    resp = yield from handler(request)
+  File "app.py", line 35, in logger
+    return (yield from handler(request))
+  File "app.py", line 73, in response
+    resp = web.Response(body=app['__templating__'].get_template(template).render(**r).encode('utf-8'))
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/environment.py", line 830, in get_template
+    return self._load_template(name, self.make_globals(globals))
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/environment.py", line 804, in _load_template
+    template = self.loader.load(self, name, globals)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/loaders.py", line 113, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/loaders.py", line 175, in get_source
+    contents = f.read().decode(self.encoding)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb1 in position 48: invalid start byte
+2017-03-30 14:41:09,305 web_server.py[line:88] ERROR Error handling request
+Traceback (most recent call last):
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/aiohttp/web_server.py", line 62, in handle_request
+    resp = yield from self._handler(request)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/aiohttp/web.py", line 270, in _handle
+    resp = yield from handler(request)
+  File "app.py", line 35, in logger
+    return (yield from handler(request))
+  File "app.py", line 73, in response
+    resp = web.Response(body=app['__templating__'].get_template(template).render(**r).encode('utf-8'))
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/environment.py", line 830, in get_template
+    return self._load_template(name, self.make_globals(globals))
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/environment.py", line 804, in _load_template
+    template = self.loader.load(self, name, globals)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/loaders.py", line 113, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "/home/gyz/python3.5.2/lib/python3.5/site-packages/jinja2/loaders.py", line 175, in get_source
+    contents = f.read().decode(self.encoding)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb1 in position 48: invalid start byte

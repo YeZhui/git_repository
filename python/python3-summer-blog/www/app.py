@@ -85,6 +85,23 @@ async def response_factory(app, handler):
         return resp
     return response
 
+@asyncio.coroutine
+def auth_factory(app, handler):
+	@asyncio.coroutine
+	def auth(request):
+		logging.debug('check user:%s %s' % (request.method, request.path))
+		request.__user__ = None
+		cookie_str = request.cookies.get(COOKIE_NAME)
+		if cookie_str:
+			user = yield from cookie2user(cookie_str)
+			if user:
+				logging.info('set current user: %s' % user.email)
+				request.__user__ = user
+		if request.path.startswith('/manage/') and (request.__user__ is None or not request.__user__.admin):
+			return web.HTTPFound('/signin')
+		return (yield from handler(request))
+	return auth
+
 def datetime_filter(t):
     delta = int(time.time() - t)
     if delta < 60:
