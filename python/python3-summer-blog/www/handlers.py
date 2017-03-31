@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-
-__author__ = 'Michael Liao'
+__author__ = 'YeZhui Guan'
 
 ' url handlers '
 
