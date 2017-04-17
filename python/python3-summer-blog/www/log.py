@@ -3,12 +3,12 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 def logConfig(filename):
-	#µ÷ÊÔÊ±debugÒÔÉÏĞÅÏ¢¶¼Êä³ö
+	#è°ƒè¯•æ—¶debugä»¥ä¸Šä¿¡æ¯éƒ½è¾“å‡º
 	logging.basicConfig(level=logging.DEBUG,
 		format = '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
-	#¶¨Òå×î¶à±¸·İ5¸öÈÕÖ¾ÎÄ¼ş£¬Ã¿¸öÈÕÖ¾ÎÄ¼ş×î´ó10M
+	#å®šä¹‰æœ€å¤šå¤‡ä»½5ä¸ªæ—¥å¿—æ–‡ä»¶ï¼Œæ¯ä¸ªæ—¥å¿—æ–‡ä»¶æœ€å¤§10M
 	rtHandler = RotatingFileHandler(filename, mode='a', maxBytes=10*1024*1024, backupCount=100, encoding='utf-8')
-	#Ö»ÓĞ¾¯¸æ¼¶±ğÒÔÉÏÈÕÖ¾²ÅĞ´ÈëÎÄ¼ş
+	#åªæœ‰è­¦å‘Šçº§åˆ«ä»¥ä¸Šæ—¥å¿—æ‰å†™å…¥æ–‡ä»¶
 	rtHandler.setLevel(logging.WARNING)
 	formatter = logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
 	rtHandler.setFormatter(formatter)

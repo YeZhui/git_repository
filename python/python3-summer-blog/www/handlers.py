@@ -5,20 +5,26 @@ __author__ = 'YeZhui Guan'
 
 import re,time,json, logging, hashlib, base64, asyncio
 import markdown2
+import time
 
 from coroweb import get,post
-from models import User,Comment, Blog, next_id
+from models import User,Comment, Blog, next_id, Classification
 
-from apis import APIValueError, APIResourceNotFoundError, APIError
+from apis import APIValueError, APIResourceNotFoundError, APIError, Page, APIPermissionError
 from config import configs
 from aiohttp import web
+from datetime import datetime
 
-COOKIE_NAME = 'awesession'
+COOKIE_NAME = 'sumsession'
 _COOKIE_KEY = configs.session.secret
 
 def check_admin(request):
 	if request.__user__ is None or not request.__user__.admin:
 		raise APIPermissionError()
+		
+def datetime_convert(t):
+	dt = datetime.fromtimestamp(t)
+	return int('%04d%02d' % (dt.year, dt.month))
 
 def get_page_index(page_str):
 	p = 1
@@ -36,6 +42,10 @@ def user2cookie(user,max_age):
 	L = [user.id, expires, hashlib.sha1(s.encode('utf-8')).hexdigest()]
 	return '-'.join(L)
 
+def text2html(text):
+	lines = map(lambda s: '<p>%s</p>' % s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'), filter(lambda s: s.strip() != '', text.split('\n')))
+	return ''.join(lines)
+	
 @asyncio.coroutine
 def cookie2user(cookie_str):
 	if not cookie_str:
@@ -61,29 +71,110 @@ def cookie2user(cookie_str):
 		return None
 
 @get('/')
-async def index(request):
-	summary = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
-	blogs = [
-		Blog(id='1', name='Test Blog', summary=summary, created_at=time.time()-120),
-		Blog(id='2', name='Something new', summary=summary, created_at=time.time()-3600),
-		Blog(id='3', name='Learn Swift', summary=summary, created_at=time.time()-7200)
-	]
+def index(request, *, page = '1'):
+	page_index = get_page_index(page)
+	num = yield from Blog.findNumber('count(id)')
+	page = Page(num)
+	if num == 0:
+		blogs = []
+	else:
+		blogs = yield from Blog.findAll(orderBy = 'created_at desc', limit = (page.offset, page.limit))
+		date_blogs = yield from Blog.findAll(orderBy = 'created_at desc')
+	s = set()
+	for date_blog in date_blogs:
+		s.add(date_blog.blog_date)
+	date_blogs = list(s)
+		
+	num = yield from Classification.findNumber('count(id)')
+	if num == 0:
+		classes = []
+	else:
+		classes = yield from Classification.findAll(orderBy = 'created_at desc')
+	
 	return {
 		'__template__': 'blogs.html',
-		'blogs' : blogs
+		'blogs' : blogs,
+		'page' : page,
+		'classes' : classes,
+		'date_blogs' : date_blogs,
+		'__user__': request.__user__
+	}
+	
+@get('/blogs/classes/{classes_name}')
+def api_get_blog_by_classes_name(request, *, classes_name, page='1'):
+	page_index = get_page_index(page)
+	num = yield from Blog.findNumber('count(id)', where="classes_name='%s'" % classes_name)
+	p = Page(num, page_index)
+	if num == 0:
+		blogs = []
+	else:
+		blogs = yield from Blog.findByField('classes_name', classes_name)
+		date_blogs = yield from Blog.findAll(orderBy = 'created_at desc')
+	num = yield from Classification.findNumber('count(id)')
+	if num == 0:
+		classes = []
+	else:
+		classes = yield from Classification.findAll(orderBy = 'created_at desc')
+	s = set()
+	for date_blog in date_blogs:
+		s.add(datetime_convert(date_blog.created_at))
+	date_blogs = list(s)
+	return {
+		'__template__': 'blogs.html',
+		'blogs' : blogs,
+		'page' : p,
+		'classes' : classes,
+		'date_blogs' : date_blogs,
+		'__user__': request.__user__
+	}
+	
+@get('/blogs/date/{blog_date}')
+def api_get_blog_by_date(request, *, blog_date, page='1'):
+	page_index = get_page_index(page)
+	num = yield from Blog.findNumber('count(id)', where="blog_date='%s'" % blog_date)
+	p = Page(num, page_index)
+	if num == 0:
+		blogs = []
+	else:
+		blogs = yield from Blog.findByField('blog_date', blog_date)
+		date_blogs = yield from Blog.findAll(orderBy = 'created_at desc')
+	num = yield from Classification.findNumber('count(id)')
+	if num == 0:
+		classes = []
+	else:
+		classes = yield from Classification.findAll(orderBy = 'created_at desc')
+	s = set()
+	for date_blog in date_blogs:
+		s.add(datetime_convert(date_blog.created_at))
+	date_blogs = list(s)
+	return {
+		'__template__': 'blogs.html',
+		'blogs' : blogs,
+		'page' : p,
+		'classes' : classes,
+		'date_blogs' : date_blogs,
+		'__user__': request.__user__
+	}
+	
+@get('/about')
+def about(request):
+	return {
+		'__template__':'about.html',
+		'__user__': request.__user__
 	}
 
 @get('/blog/{id}')
-def get_blog(id):
+def get_blog(id, request):
 	blog = yield from Blog.find(id)
 	comments = yield from Comment.findAll('blog_id=?', [id], orderBy = 'created_at desc')
 	for c in comments:
 		c.html_content = text2html(c.content)
-	blog.html_conteng = markdown2.markdown(blog.content)
+	blog.html_content = markdown2.markdown(blog.content)
 	return {
 		'__template__':'blog.html',
 		'blog':blog,
-		'comments':comments
+		'comments':comments,
+		'__user__':request.__user__
 	}
 
 @get('/register')
@@ -95,7 +186,7 @@ def register():
 @get('/signin')
 def signin():
 	return {
-		'__template__': 'signin.html'
+		'__template__': 'signin.html',
 	}
 
 @post('/api/authenticate')
@@ -128,22 +219,134 @@ def signout(request):
 	r.set_cookie(COOKIE_NAME, '-deleted-', max_age=0, httponly=True)
 	logging.info('user signed out.')
 	return r
-
-@get('/manage/blogs')
-def manage_blogs(*, page='1'):
+	
+@get('/manage/')
+def manage():
+	return 'redirect:/manage/comments'
+	
+@get('/manage/comments')
+def manage_comments(request, *, page = '1'):
 	return {
-		'__template__':'manage_blogs.html',
-		'page_index':get_page_index(page)
+		'__template__':'manage_comments.html',
+		'page_index':get_page_index(page),
+		'__user__': request.__user__
 	}
 
+@get('/manage/blogs')
+def manage_blogs(request, *, page='1'):
+	return {
+		'__template__':'manage_blog.html',
+		'page_index':get_page_index(page),
+		'__user__': request.__user__
+	}
+	
+@get('/manage/classes')
+def manage_classes(request, *, page='1'):
+	return {
+		'__template__':'manage_classes.html',
+		'page_index':get_page_index(page),
+		'__user__': request.__user__
+	}
+	
 @get('/manage/blogs/create')
-def manage_create_blog():
+def manage_create_blog(request):
 	return {
 		'__template__':'manage_blog_edit.html',
 		'id':'',
-		'action':'/api/blogs'
+		'action':'/api/blogs',
+		'__user__': request.__user__
 	}
+	
+@get('/manage/classes/create')
+def manage_create_classes(request):
+	return {
+		'__template__':'manage_classes_edit.html',
+		'id':'',
+		'action':'/api/classes',
+		'__user__': request.__user__
+	}
+	
+@get('/manage/blogs/edit')
+def manage_edit_blog(request, *, id):
+	return {
+		'__template__':'manage_blog_edit.html',
+		'id':id,
+		'action':'/api/blogs/%s' % id,
+		'__user__': request.__user__
+	}
+	
+@get('/manage/classes/edit')
+def manage_edit_classes(request, *, id):
+	return {
+		'__template__':'manage_classes_edit.html',
+		'id':id,
+		'action':'/api/classes/%s' % id,
+		'__user__': request.__user__
+	}
+	
+@get('/manage/users')
+def manage_users(request, *, page='1'):
+	return {
+		'__template__':'manage_users.html',
+		'page_index':get_page_index(page),
+		'__user__': request.__user__
+	}
+	
+@get('/api/comments')
+def api_comments(request, *, page='1'):
+	page_index = get_page_index(page)
+	num = yield from Comment.findNumber('count(id)')
+	p = Page(num, page_index)
+	if num == 0:
+		return dict(page=p, comments=())
+	comments = yield from Comment.findAll(orderBy='created_at desc', limit=(p.offset, p.limit))
+	return dict(page=p, comments=comments)
+	
+@get('/api/classes')
+def api_classes(request, *, page='1'):
+	page_index = get_page_index(page)
+	num = yield from Classification.findNumber('count(id)')
+	p = Page(num, page_index)
+	if num == 0:
+		return dict(page=p, classes=())
+	classes = yield from Classification.findAll(orderBy='created_at desc', limit = (p.offset, p.limit))
+	return dict(page=p, classes = classes)
+	
+@post('/api/blogs/{id}/comments')
+def api_create_comment(id, request, *, content):
+	user = request.__user__
+	if user is None:
+		raise APIPermissionError('Please signin first.')
+	if not content or not content.strip():
+		raise APIValueError('content')
+	blog = yield from Blog.find(id)
+	if blog is None:
+		raise APIResourceNotFoundError('Blog')
+	comment = Comment(blog_id=blog.id, user_id=user.id, user_name=user.name, user_image=user.image, content=content.strip())
+	yield from comment.save()
+	return comment
 
+@post('/api/comments/{id}/delete')
+def api_delete_comments(id, request):
+	check_admin(request)
+	c = yield from Comment.find(id)
+	if c is None:
+		raise APIResourceNotFoundError('Comment')
+	yield from c.remove()
+	return dict(id=id)
+	
+@get('/api/users')
+def api_get_users(*, page='1'):
+	page_index = get_page_index(page)
+	num = yield from User.findNumber('count(id)')
+	p = Page(num, page_index)
+	if num == 0:
+		return dict(page=p, users=())
+	users = yield from User.findAll(orderBy='created_at desc', limit=(p.offset, p.limit))
+	for u in users:
+		u.passwd = '******'
+	return dict(page=p, users=users)
+	
 _RE_EMAIL = re.compile(r'^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$')
 _RE_SHA1 = re.compile(r'^[0-9a-f]{40}$')
 
@@ -184,9 +387,14 @@ def api_blogs(*, page='1'):
 def api_get_blog(*, id):
 	blog = yield from Blog.find(id)
 	return blog
+	
+@get('/api/classes/{id}')
+def api_get_classes(*, id):
+	classifition = yield from Classification.find(id)
+	return classifition
 
 @post('/api/blogs')
-def api_create_blog(request, * , name, summary, content):
+def api_create_blog(request, * , name, summary, content, classes_name):
 	check_admin(request)
 	if not name or not name.strip():
 		raise APIValueError('name', 'name cannot be empty.')
@@ -194,8 +402,58 @@ def api_create_blog(request, * , name, summary, content):
 		raise APIValueError('summary', 'summary cannot be empty.')
 	if not content or not content.strip():
 		raise APIValueError('content', 'content cannot be empty.')
-	blog = Blog(user_id=request.__user__.id, user_name=request.__user___.name, user_image=request.__user__.image, name=name.strip(), summary=summary.strip(), content=content.strip())
+	dt = datetime.fromtimestamp(time.time())
+	blog_date = '%04d%02d' % (dt.year, dt.month)
+	blog = Blog(user_id=request.__user__.id, user_name=request.__user__.name, user_image=request.__user__.image, name=name.strip(), summary=summary.strip(), content=content.strip(), classes_name=classes_name.strip(), blog_date=blog_date)
 	yield from blog.save()
 	return blog
+	
+@post('/api/classes')
+def api_create_classes(request, *, name):
+	check_admin(request)
+	if not name or not name.strip():
+		raise APIValueError('name', 'name cannot be empty.')
+	classifition = Classification(name = name.strip())
+	yield from classifition.save()
+	return classifition
 
+@post('/api/blogs/{id}')
+def api_update_blog(id, request, *, name, summary, content, classes_name):
+	check_admin(request)
+	blog = yield from Blog.find(id)
+	if not name or not name.strip():
+		raise APIValueError('name', 'name cannot be empty.')
+	if not summary or not summary.strip():
+		raise APIValueError('summary', 'summary cannot be empty.')
+	if not content or not content.strip():
+		raise APIValueError('content', 'content cannot be empty.')
+	blog.name = name.strip()
+	blog.summary = summary.strip()
+	blog.content = content.strip()
+	blog.classes_name = classes_name.strip()
+	yield from blog.update()
+	return blog
+	
+@post('/api/classes/{id}')
+def api_update_classes(id, request, *, name):
+	check_admin(request)
+	classifition = yield from Classification.find(id)
+	if not name or not name.strip():
+		raise APIValueError('name', 'name cannot be empty.')
+	classifition.name = name.strip()
+	yield from classifition.update()
+	return classifition
 
+@post('/api/blogs/{id}/delete')
+def api_delete_blog(request, *, id):
+	check_admin(request)
+	blog = yield from Blog.find(id)
+	yield from blog.remove()
+	return dict(id=id)
+
+@post('/api/classes/{id}/delete')
+def api_delete_classes(request, *, id):
+	check_admin(request)
+	classifition = yield from Classification.find(id)
+	yield from classifition.remove()
+	return dict(id=id)

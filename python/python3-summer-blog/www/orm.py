@@ -4,10 +4,10 @@ import aiomysql
 
 log.logConfig('error.log')
 
-@asyncio.coroutine #±ê¼ÇÎªÒ»¸öĞ­³Ì
+@asyncio.coroutine #æ ‡è®°ä¸ºä¸€ä¸ªåç¨‹
 def create_pool(loop, **kw):
 	logging.debug('create database connection pool...')
-	#¶¨ÒåÈ«¾Ö±äÁ¿
+	#å®šä¹‰å…¨å±€å˜é‡
 	global __pool
 	__pool = yield from aiomysql.create_pool(
 		host = kw.get('host', 'localhost'),
@@ -42,6 +42,21 @@ def select(sql, args, size=None):
 		yield from cur.close()
 		logging.info('rows returned; %s' % len(rs))
 		return rs
+		
+@asyncio.coroutine
+def selectFormat(sql, size=None):
+	logging.debug(sql)
+	global __pool
+	with (yield from __pool) as conn:
+		cur = yield from conn.cursor(aiomysql.DictCursor)
+		yield from cur.execute(sql)
+		if size:
+			rs = yield from cur.fetchmany(size)
+		else:
+			rs = yield from cur.fetchall()
+		yield from cur.close()
+		logging.info('rows returned; %s' % len(rs))
+		return rs
 
 #insert,update,delete
 @asyncio.coroutine
@@ -51,7 +66,7 @@ def execute(sql, args):
 		try:
 			cur = yield from conn.cursor()
 			yield from cur.execute(sql.replace('?', '%s'), args)
-			affected = cur.rowcount #·µ»Ø½á¹ûÊı
+			affected = cur.rowcount #è¿”å›ç»“æœæ•°
 			yield from cur.close()
 		except BaseException as e:
 			raise
@@ -63,14 +78,14 @@ def create_args_string(num):
 		L.append('?')
 	return (','.join(L))
 
-#ModelÀà
+#Modelç±»
 class ModelMetaclass(type):
 	def __new__(cls, name, bases, attrs):
 		if name == 'Model':
 			return type.__new__(cls, name, bases, attrs)
 		tableName = attrs.get('__table__', None) or name
 		logging.info('found model: %s (table: %s)' % (name, tableName))
-		#»ñÈ¡ËùÓĞµÄFieldºÍÖ÷¼üÃû
+		#è·å–æ‰€æœ‰çš„Fieldå’Œä¸»é”®å
 		mappings = dict()
 		fields = []
 		primaryKey = None
@@ -134,6 +149,18 @@ class Model(dict, metaclass=ModelMetaclass):
 		if len(rs) == 0:
 			return None
 		return cls(**rs[0])
+		
+	@classmethod
+	@asyncio.coroutine
+	def findByField(cls, field, value, select=None):
+		'find object by any field.'
+		if select is None:
+			rs = yield from selectFormat("%s where %s='%s'" % (cls.__select__, field, value))
+		else:
+			rs = yield from selectFormat("%s where %s='%s'" % (select, field, value))
+		if len(rs) == 0:
+			return None
+		return [cls(**r) for r in rs]
 
 	@asyncio.coroutine
 	def save(self):
@@ -154,7 +181,7 @@ class Model(dict, metaclass=ModelMetaclass):
 	
 	@asyncio.coroutine
 	def remove(self):
-		args = list(map(self.getValue, self.__fields__))
+		args = [self.getValue(self.__primary_key__)]
 		rows = yield from execute(self.__delete__, args)
 		if rows != 1:
 			logging.error('failed to delete by primary key')

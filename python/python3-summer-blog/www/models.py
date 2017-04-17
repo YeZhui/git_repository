@@ -23,10 +23,13 @@ class Blog(Model):
 	user_id = StringField(column_type='varchar(50)')
 	user_name = StringField(column_type='varchar(50)')
 	user_image = StringField(column_type='varchar(500)')
+	classes_id = StringField(column_type='varchar(50)')
+	classes_name = StringField(column_type='varchar(50)')
 	name = StringField(column_type='varchar(50)')
 	summary = StringField(column_type='varchar(200)')
 	content = TextField()
 	created_at = DecimalField(default=time.time)
+	blog_date = StringField(column_type='varchar(10)')
 
 class Comment(Model):
 	__table__ = 'comments'
@@ -36,6 +39,12 @@ class Comment(Model):
 	user_name = StringField(column_type='varchar(50)')
 	user_image = StringField(column_type='varchar(500)')
 	content = TextField()
+	created_at = DecimalField(default=time.time)
+	
+class Classification(Model):
+	__table__ = 'classes'
+	id = StringField(primary_key=True, default=next_id, column_type='varchar(50)')
+	name = StringField(column_type='varchar(50)')
 	created_at = DecimalField(default=time.time)
 
 @asyncio.coroutine
@@ -55,4 +64,4 @@ if __name__ == '__main__':
 	loop.close()
 #loop.run_forever()
 	if loop.is_closed():
-		sys.exit(0) #0±íÊ¾Õý³£ÍË³ö
+		sys.exit(0) #0è¡¨ç¤ºæ­£å¸¸é€€å‡º
