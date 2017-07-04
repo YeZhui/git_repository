@@ -5,28 +5,29 @@
 #include "FileLog.h"
 #include "SysLog.h"
 #include "PrintLog.h"
+#include "SingleTools.h"
 
 namespace SingleLog
 {
 
 	static CBaseLog *baseLog = NULL;
 
-	int Init(const char p_cFileType)
+	int Init(const char p_cLogType)
 	{
 		pthread_t t_read;
 		int iRet = 0;
 
 		Delete();
 
-		if (p_cFileType == 'F' || p_cFileType == 'f')
+		if (p_cLogType == FILE_LOG)
 		{
 			baseLog = new CFileLog();
 		}
-		else if(p_cFileType == 'P' || p_cFileType == 'p')
+		else if(p_cLogType == PRINT_LOG)
 		{
 			baseLog = new CPrintLog();
 		}
-		else if(p_cFileType == 'S' || p_cFileType == 's')
+		else if(p_cLogType == SYS_LOG)
 		{
 			baseLog = new CSysLog();
 		}
@@ -67,13 +68,13 @@ namespace SingleLog
 
 		switch(p_iLevel)
 		{
-			case 0:
+			case INFO:
 				strncpy(szLevel, "info", sizeof(szLevel)-1);
 				break;
-			case 1:
+			case WARNING:
 				strncpy(szLevel, "warning", sizeof(szLevel)-1);
 				break;
-			case 2:
+			case ERROR:
 				strncpy(szLevel, "error", sizeof(szLevel)-1);
 				break;
 			default:

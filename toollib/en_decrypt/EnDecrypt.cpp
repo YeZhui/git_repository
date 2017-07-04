@@ -1,10 +1,13 @@
 #include <string.h>
 #include <map>
 #include "EnDecrypt.h"
-using namespace std;
+#include "Md5.h"
+#include <string>
+
 
 namespace En_Decrypt
 {
+	using namespace std;
 	static char g_szBase64Code[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	/*
 	**返回值:0  正确   非0  则返回目标字符串所需要的长度
@@ -95,9 +98,13 @@ namespace En_Decrypt
 
 	int Md5Encrypt(const char *p_szSrcStr, int p_iSrcLen, char *p_szMd5Str, int p_iMd5Len)
 	{
-
+		//std::string strSrc = p_szSrcStr;
+		string md5Str("");
+		md5Str = getMD5(string(p_szSrcStr));
+		strncpy(p_szMd5Str, md5Str.c_str(),p_iMd5Len-1);
+		return 0;
 	}
-
+/*
 	int SimpleEncrypt(int p_iSrcText, int p_iKey)
 	{
 	}
@@ -105,6 +112,7 @@ namespace En_Decrypt
 	int SimpleDecrypt(int p_iSrcText, int p_iKey)
 	{
 	}
+	*/
 	//TODO:RSA加解密
 }
 

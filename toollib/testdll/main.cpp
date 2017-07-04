@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
 {
 	if (CheckSinglog() != 0)
 		return -1;
-//	CheckEnDecrypt();
+	CheckEnDecrypt();
 	CheckReadIni();
 	
 
