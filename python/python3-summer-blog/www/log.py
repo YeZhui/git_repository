@@ -2,6 +2,8 @@
 import logging
 from logging.handlers import RotatingFileHandler
 
+runLog = '../log/runlog.log'
+
 def logConfig(filename):
 	#调试时debug以上信息都输出
 	logging.basicConfig(level=logging.DEBUG,

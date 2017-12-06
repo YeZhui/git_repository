@@ -1,52 +1,57 @@
 <!DOCTYPE html>
-<!--
-{% macro pagination(url, page) %}
-    <ul class="uk-pagination">
-        {% if page.has_previous %}
-            <li><a href="{{ url }}{{ page.page_index - 1 }}"><i class="uk-icon-angle-double-left"></i></a></li>
-        {% else %}
-            <li class="uk-disabled"><span><i class="uk-icon-angle-double-left"></i></span></li>
-        {% endif %}
-            <li class="uk-active"><span>{{ page.page_index }}</span></li>
-        {% if page.has_next %}
-            <li><a href="{{ url }}{{ page.page_index + 1 }}"><i class="uk-icon-angle-double-right"></i></a></li>
-        {% else %}
-            <li class="uk-disabled"><span><i class="uk-icon-angle-double-right"></i></span></li>
-        {% endif %}
-    </ul>
-{% endmacro %}
--->
 <html>
 <head>
     <meta charset="utf-8" />
     {% block meta %}<!-- block meta  -->{% endblock %}
     <title>{% block title %} ? {% endblock %} - 晟夏的官方博客</title>
-    <link rel="stylesheet" href="/static/css/uikit.min.css">
-    <link rel="stylesheet" href="/static/css/uikit.gradient.min.css">
+    <link rel="stylesheet" href="/static/css/uikit.summerEx.css" />
     <link rel="stylesheet" href="/static/css/summer.css" />
-    <script src="/static/js/jquery-3.2.0.min.js"></script>
+    <script src="/static/js/jquery-2.1.4.min.js"></script>
     <script src="/static/js/summer.js"></script>
     <script src="/static/js/uikit.min.js"></script>
     <script src="/static/js/vue.min.js"></script>
 	<script src="/static/js/sha1.min.js"></script>
 	<script src="/static/js/sticky.min.js"></script>
+	
+	<link rel="stylesheet" href="/static/css/components/sticky.min.css">
+	<script src="/static/js/components/sticky.min.js"></script>
+	
+	<link rel="icon" href="/favicon.ico" type="image/x-icon"/>
+	<!--<link rel="bookmark" href="/favicon.ico" type="image/x-icon"/>-->
     {% block beforehead %}<!-- before head  -->{% endblock %}
 </head>
 <body>
-    <nav class="uk-navbar uk-navbar-attached uk-margin-bottom">
+    <nav class="uk-navbar uk-navbar-attached uk-margin-bottom" data-uk-sticky>
         <div class="uk-container uk-container-center">
-            <a href="/" class="uk-navbar-brand">晟夏的官方博客</a>
+            <a href="/" class="uk-navbar-brand uk-animation-scale-down uk-animation-fade">晟夏的官方博客</a>
             <ul class="uk-navbar-nav">
-                <li data-url="blogs"><a href="/"><i class="uk-icon-home"></i>博客列表</a></li>
-                <li><a href="/manage/blogs/create"><i class="uk-icon-edit"></i>写博客</a></li>
-				<li><a href="/manage/blogs"><i class="uk-icon-hand-lizard-o"></i>管理</a></li>
+                <li id="blog_list" data-url="blogs"><a href="/"><i class="uk-icon-home"></i>博客列表</a></li>
+				{% if __user__.admin %}
+					<li id="blog_edit"><a href="/manage/blogs/create"><i class="uk-icon-edit"></i>写博客</a></li>
+					<li id="manages" class="uk-parent" data-uk-dropdown><a href="/manage/blogs"><i class="uk-icon-cog"></i>管理</a>
+						<div class="uk-dropdown uk-dropdown-navbar">
+							<ul class="uk-nav uk-nav-navbar">
+								<li><a href="/manage/comments"><i class="uk-icon-comments"></i>管理评论</a></li>
+								<li><a href="/manage/blogs"><i class="uk-icon-book"></i>管理博客</a></li>
+								<li><a href="/manage/users"><i class="uk-icon-users"></i>管理用户</a></li>
+								<li><a href="/manage/classes"><i class="uk-icon-hand-spock-o"></i>管理分类</a></li>
+							</ul>
+						</div>
+					</li>
+				{% endif %}
             </ul>
             <div class="uk-navbar-flip">
                 <ul class="uk-navbar-nav">
                 {% if __user__ %}
-                    <li class="uk-parent" data-uk-dropdown>
-                        <a href="#0"><i class="uk-icon-user"></i> {{ __user__.name }}</a>
+                    <li id="info" class="uk-parent" data-uk-dropdown>
+                        <a href="/"><i class="uk-icon-user"></i> {{ __user__.name }} </a>
                         <div class="uk-dropdown uk-dropdown-navbar">
+							<ul class="uk-nav uk-nav-navbar">
+                                <li><a href="/userinfo/{{ __user__.id }}"><i class="uk-icon-info"></i>个人资料</a></li>
+                            </ul>
+							<ul class="uk-nav uk-nav-navbar">
+                                <li><a href="/mdf-passwd"><i class="uk-icon-user-secret"></i>修改密码</a></li>
+                            </ul>
                             <ul class="uk-nav uk-nav-navbar">
                                 <li><a href="/signout"><i class="uk-icon-sign-out"></i>登出</a></li>
                             </ul>
@@ -54,7 +59,7 @@
                     </li>
                 {% else %}
                     <li><a href="/signin"><i class="uk-icon-sign-in"></i>登陆</a></li>
-                    <li><a href="/register"><i class="uk-icon-edit"></i>注册</a></li>
+                    <li><a href="/register"><i class="uk-icon-registered"></i>注册</a></li>
                 {% endif %}
                 </ul>
             </div>
@@ -70,7 +75,7 @@
         </div>
     </div>
 
-    <div class="uk-margin-large-top" style="background-color:#eee; border-top:1px solid #ccc;">
+    <div class="uk-margin-large-top" style="background-color:#rgba(247, 253, 245, 0.08); border-top:1px solid #ccc;">
         <div class="uk-container uk-container-center uk-text-center">
             <div class="uk-panel uk-margin-top uk-margin-bottom">
                 <p>
@@ -83,10 +88,9 @@
 						<img src="/static/img/toutiao.jpg" width="32" height="32" class="href_img32">
 					</a>
                 </p>
-                <p>Copyright &copy; 2017. Powered by 晟夏的官方博客. <a href="http://www.miitbeian.gov.cn/state/outPortal/loginPortal.action" target="_blank">备案网站</a></p>
+                <p>Copyright &copy; 2017. Powered by 晟夏的官方博客. <a href="http://www.baidu.com" target="_blank">备案网站</a></p>
                 <p><a href="/about">关于我们</a>. All rights reserved.</p>
 				<p>网站作者：晟夏的叶</p>
-                <!-- <a target="_blank" href="http://www.w3.org/TR/html5/"><i class="uk-icon-html5" style="font-size:64px; color: #444;"></i></a> -->
             </div>
 
         </div>

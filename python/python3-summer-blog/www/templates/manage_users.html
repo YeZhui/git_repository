@@ -3,8 +3,14 @@
 {% block title %}用户{% endblock %}
 
 {% block beforehead %}
-
+<script src="/static/js/components/pagination.js"></script>
 <script>
+$(function(){
+	$("#blog_list").removeClass("uk-active");
+	$("#blog_edit").removeClass("uk-active");
+	$("#manages").addClass("uk-active");
+	$("#info").removeClass("uk-active");
+});
 function initVM(data) {
     $('#vm').show();
     var vm = new Vue({
@@ -15,6 +21,19 @@ function initVM(data) {
         }
     });
 }
+
+function initPage(data) {
+	var settings = {
+		items:data.page.item_count,
+		itemsOnPage:data.page.page_size,
+		currentPage:data.page.page_index-1,
+		onSelectPage : function(pageIndex){
+			location.assign('/manage/users?page=' + (pageIndex+1));
+		}
+	};
+	var pagination = UIkit.pagination($("#page-pagination"), settings);
+}
+
 $(function() {
     getJSON('/api/users', {
         page: {{ page_index }}
@@ -24,6 +43,7 @@ $(function() {
         }
         $('#loading').hide();
         initVM(results);
+		initPage(results);
     });
 });
 </script>
@@ -36,7 +56,7 @@ $(function() {
         <div class="uk-panel uk-panel-box">
             <ul class="uk-breadcrumb">
                 <li><a href="/manage/comments">评论</a></li>
-                <li><a href="/manage/blogs">日志</a></li>
+                <li><a href="/manage/blogs">博客</a></li>
                 <li class="uk-active"><span>用户</span></li>
 				<li><a href="/manage/classes">分类</a></li>
             </ul>
@@ -74,7 +94,8 @@ $(function() {
                 </tr>
             </tbody>
         </table>
-        <div v-component="pagination" v-with="page"></div>
+        <ul id="page-pagination" class="uk-pagination">
+		</ul>
     </div>
 
 {% endblock %}

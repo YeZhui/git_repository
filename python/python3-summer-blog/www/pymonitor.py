@@ -1,14 +1,14 @@
 #coding=utf-8
 
-__author__ = 'Michael Liao'
+__author__ = 'YeZhui Guan'
 
 import os, sys, time, subprocess
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-def log(s):
-	print('[Monitor] %s' % s)
+import log,logging
+log.logConfig(log.runLog)
 
 class MyFileSystemEventHandler(FileSystemEventHandler):
 	def __init__(self, fn):
@@ -17,7 +17,7 @@ class MyFileSystemEventHandler(FileSystemEventHandler):
 
 	def on_any_event(self, event):
 		if event.src_path.endswith('.py'):
-			log('Python source file changed: %s' % event.src_path)
+			logging.warning('Python source file changed: %s' % event.src_path)
 			self.restart()
 
 command = ['echo', 'ok']
@@ -26,15 +26,15 @@ process = None
 def kill_process():
 	global process
 	if process:
-		log('Kill process [%s]...' % process.pid)
+		logging.warning('Kill process [%s]...' % process.pid)
 		process.kill()
 		process.wait()
-		log('Process ended with code %s' % process.returncode)
+		logging.warning('Process ended with code %s' % process.returncode)
 		process = None
 
 def start_process():
 	global process, command
-	log('Start process %s...' % ' '.join(command))
+	logging.warning('Start process %s...' % ' '.join(command))
 	process = subprocess.Popen(command, stdin=sys.stdin, stdout = sys.stdout)
 
 def restart_process():
@@ -45,7 +45,7 @@ def start_watch(path, callback):
 	observer = Observer()
 	observer.schedule(MyFileSystemEventHandler(restart_process), path, recursive = True)
 	observer.start()
-	log('Watching directory %s...' % path)
+	logging.warning('Watching directory %s...' % path)
 	start_process()
 	try:
 		while True:
@@ -57,7 +57,7 @@ def start_watch(path, callback):
 if __name__ == '__main__':
 	argv = sys.argv[1:]
 	if not argv:
-		print('Usage: ./pymonitor your-script.py')
+		print('Usage: python pymonitor.py your-script.py')
 		exit(0)
 	if argv[0] != 'python':
 		argv.insert(0, 'python')

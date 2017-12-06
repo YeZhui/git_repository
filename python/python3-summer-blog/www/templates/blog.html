@@ -3,7 +3,6 @@
 {% block title %}{{ blog.name }}{% endblock %}
 
 {% block beforehead %}
-
 <script>
 var comment_url = '/api/blogs/{{ blog.id }}/comments';
 $(function () {
@@ -32,7 +31,9 @@ $(function () {
     <div class="uk-width-medium-3-4">
         <article class="uk-article">
             <h2 class="uk-article-title">{{ blog.name }}</h2>
-            <p class="uk-article-meta">发表于{{ blog.created_at|datetime }}</p>
+            <p class="uk-article-meta">发表于{{ blog.created_at|datetime }}
+				<button class="uk-button" style="border-radius: 20px;"><a href="/manage/blogs/edit/{{ blog.classes_id }}?id={{ blog.id }}">编辑文章</a></button>
+			</p>
             <p>{{ blog.html_content|safe }}</p>
         </article>
 
@@ -86,19 +87,27 @@ $(function () {
     </div>
 
     <div class="uk-width-medium-1-4">
-        <div class="uk-panel uk-panel-box">
+        <div class="uk-panel uk-panel-hovel">
             <div class="uk-text-center">
                 <img class="uk-border-circle" width="120" height="120" src="{{ blog.user_image }}">
-                <h3>{{ blog.user_name }}</h3>
+                <h3>作者：{{ blog.user_name }}</h3>
             </div>
         </div>
-        <div class="uk-panel uk-panel-header">
-            <h3 class="uk-panel-title">友情链接</h3>
-            <ul class="uk-list uk-list-line">
-                <li><i class="uk-icon-link"></i> <a href="#">编程</a></li>
-                <li><i class="uk-icon-link"></i> <a href="#">思考</a></li>
-                <li><i class="uk-icon-link"></i> <a href="#">读书</a></li>
-            </ul>
+        <div class="uk-panel uk-panel-header uk-panel-box-primary">
+            <h3 class="uk-panel-title">分类列表</h3>
+            <ul class="uk-nav-sub">
+			{% for classification in classes %}
+				<li><a href="/blogs/classes/{{ classification.id }}">{{classification.name}}</a></li>
+			{% endfor %}
+			</ul>
+        </div>
+		<div class="uk-panel uk-panel-header uk-panel-box-primary">
+            <h3 class="uk-panel-title">存档列表</h3>
+            <ul class="uk-nav-sub">
+			{% for date_blog in date_blogs %}
+				<li><a href="/blogs/date/{{ date_blog }}">{{ date_blog }}</a></li>
+			{% endfor %}
+			</ul>
         </div>
     </div>
 

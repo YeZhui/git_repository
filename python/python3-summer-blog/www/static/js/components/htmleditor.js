@@ -32,7 +32,10 @@
             toolbar      : [ 'bold', 'italic', 'strike', 'link', 'image', 'blockquote', 'listUl', 'listOl' ],
             lblPreview   : 'Preview',
             lblCodeview  : 'HTML',
-            lblMarkedview: 'Markdown'
+            lblMarkedview: 'Markdown',
+			isDraft      : false,
+			saveDraft    : '保存草稿',
+			commitBlog   : '发布博客'
         },
 
         boot: function() {
@@ -54,6 +57,15 @@
         init: function() {
 
             var $this = this, tpl = UI.components.htmleditor.template;
+			
+			if ( this.options.isDraft ) {
+				tpl = UI.components.htmleditor.templateDraft;
+				tpl = tpl.replace(/\{:saveDraft}/g, this.options.saveDraft);
+				tpl = tpl.replace(/\{:commitBlog}/g, this.options.commitBlog);
+			}
+			else {
+				tpl = tpl.replace(/\{:commitBlog}/g, this.options.commitBlog);
+			}
 
             this.CodeMirror = this.options.CodeMirror || CodeMirror;
             this.buttons    = {};
@@ -380,6 +392,28 @@
                         '<li class="uk-htmleditor-button-code"><a>{:lblCodeview}</a></li>',
                         '<li class="uk-htmleditor-button-preview"><a>{:lblPreview}</a></li>',
                         '<li><a data-htmleditor-button="fullscreen"><i class="uk-icon-expand"></i></a></li>',
+						'<li class="uk-button"><a href="javascript:saveBlog()"><i class="uk-icon-mail-forward"></i>{:commitBlog}</a></li>',
+                    '</ul>',
+                '</div>',
+            '</div>',
+            '<div class="uk-htmleditor-content">',
+                '<div class="uk-htmleditor-code"></div>',
+                '<div class="uk-htmleditor-preview"><div></div></div>',
+            '</div>',
+        '</div>'
+    ].join('');
+	
+	UI.components.htmleditor.templateDraft = [
+        '<div class="uk-htmleditor uk-clearfix" data-mode="split">',
+            '<div class="uk-htmleditor-navbar">',
+                '<ul class="uk-htmleditor-navbar-nav uk-htmleditor-toolbar"></ul>',
+                '<div class="uk-htmleditor-navbar-flip">',
+                    '<ul class="uk-htmleditor-navbar-nav">',
+                        '<li class="uk-htmleditor-button-code"><a>{:lblCodeview}</a></li>',
+                        '<li class="uk-htmleditor-button-preview"><a>{:lblPreview}</a></li>',
+                        '<li><a data-htmleditor-button="fullscreen"><i class="uk-icon-expand"></i></a></li>',
+						'<li class="uk-button"><a href="javascript:saveDraft()"><i class="uk-icon-level-up"></i>{:saveDraft}</a></li>',
+						'<li class="uk-button"><a href="javascript:saveBlog()"><i class="uk-icon-mail-forward"></i>{:commitBlog}</a></li>',
                     '</ul>',
                 '</div>',
             '</div>',
@@ -523,7 +557,37 @@
             addAction('strike', '~~$1~~');
             addAction('blockquote', '> $1', 'replaceLine');
             addAction('link', '[$1](http://)');
-            addAction('image', '![$1](http://)');
+			
+			editor.on('action.image', function() {
+				//弹出图片框，上传图片，返回图片地址
+				var inputFile = document.createElement('input');
+				inputFile.setAttribute("type", "file");
+				inputFile.setAttribute("id", "upload-select");
+				
+				var settings = {
+					action : '/static/img',
+					allow : '*.(jpg|jpeg|gif|png)',
+					param : 'FILES', 
+					loadstart : function(){
+					},
+					progress : function(percent){
+						percent = Math.ceil(percent);
+					},
+					allcomplete : function(response){
+						setTimeout(function(){
+							//progressbar.addClass("uk-hidden");
+						}, 250);
+						var mode = 'replaceSelection';
+						if (editor.getCursorMode() == 'markdown') {
+							editor[mode == 'replaceLine' ? 'replaceLine' : 'replaceSelection']('![$1](' + response + ')');
+						}
+					}
+				};
+				var select = UIkit.uploadSelect(inputFile, settings);
+				
+				inputFile.click();
+				//更新界面
+			});
 
             editor.on('action.listUl', function() {
 

@@ -2,7 +2,7 @@
 import asyncio,log,logging
 import aiomysql
 
-log.logConfig('error.log')
+log.logConfig(log.runLog)
 
 @asyncio.coroutine #标记为一个协程
 def create_pool(loop, **kw):

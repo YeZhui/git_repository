@@ -8,12 +8,15 @@ import markdown2
 import time
 
 from coroweb import get,post
-from models import User,Comment, Blog, next_id, Classification
+from models import User,Comment, Blog, next_id, Classification, Draft
 
 from apis import APIValueError, APIResourceNotFoundError, APIError, Page, APIPermissionError
 from config import configs
 from aiohttp import web
 from datetime import datetime
+
+import log
+log.logConfig(log.runLog)
 
 COOKIE_NAME = 'sumsession'
 _COOKIE_KEY = configs.session.secret
@@ -25,6 +28,10 @@ def check_admin(request):
 def datetime_convert(t):
 	dt = datetime.fromtimestamp(t)
 	return int('%04d%02d' % (dt.year, dt.month))
+	
+def get_datetime(t):
+	dt = datetime.fromtimestamp(t)
+	return str('%04d年%02d月%02d日 %02d:%02d:%02d' % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second))
 
 def get_page_index(page_str):
 	p = 1
@@ -70,13 +77,14 @@ def cookie2user(cookie_str):
 		logging.exception(e)
 		return None
 
-@get('/')
-def index(request, *, page = '1'):
+@get('/index/{page}')
+def index_page(request, *, page = '1'):
 	page_index = get_page_index(page)
 	num = yield from Blog.findNumber('count(id)')
-	page = Page(num)
+	page = Page(num,page_index)
 	if num == 0:
 		blogs = []
+		date_blogs = []
 	else:
 		blogs = yield from Blog.findAll(orderBy = 'created_at desc', limit = (page.offset, page.limit))
 		date_blogs = yield from Blog.findAll(orderBy = 'created_at desc')
@@ -84,31 +92,73 @@ def index(request, *, page = '1'):
 	for date_blog in date_blogs:
 		s.add(date_blog.blog_date)
 	date_blogs = list(s)
-		
+	
 	num = yield from Classification.findNumber('count(id)')
 	if num == 0:
 		classes = []
 	else:
 		classes = yield from Classification.findAll(orderBy = 'created_at desc')
+		
+	pages = range(1,page.page_count+1)
+	page_flag = 0
 	
 	return {
 		'__template__': 'blogs.html',
 		'blogs' : blogs,
 		'page' : page,
+		'pages' : pages,
+		'page_flag' : page_flag,
 		'classes' : classes,
 		'date_blogs' : date_blogs,
 		'__user__': request.__user__
 	}
 	
-@get('/blogs/classes/{classes_name}')
-def api_get_blog_by_classes_name(request, *, classes_name, page='1'):
+@get('/')
+def index(request, *, page = '1'):
 	page_index = get_page_index(page)
-	num = yield from Blog.findNumber('count(id)', where="classes_name='%s'" % classes_name)
+	num = yield from Blog.findNumber('count(id)')
+	page = Page(num,page_index)
+	if num == 0:
+		blogs = []
+		date_blogs = []
+	else:
+		blogs = yield from Blog.findAll(orderBy = 'created_at desc', limit = (page.offset, page.limit))
+		date_blogs = yield from Blog.findAll(orderBy = 'created_at desc')
+	s = set()
+	for date_blog in date_blogs:
+		s.add(date_blog.blog_date)
+	date_blogs = list(s)
+	
+	num = yield from Classification.findNumber('count(id)')
+	if num == 0:
+		classes = []
+	else:
+		classes = yield from Classification.findAll(orderBy = 'created_at desc')
+		
+	pages = range(1,page.page_count+1)
+	page_flag = 0
+	
+	return {
+		'__template__': 'blogs.html',
+		'blogs' : blogs,
+		'page' : page,
+		'pages' : pages,
+		'page_flag' : page_flag,
+		'classes' : classes,
+		'date_blogs' : date_blogs,
+		'__user__': request.__user__
+	}
+	
+@get('/blogs/classes/{classes_id}')
+def api_get_blog_by_classes_id(request, *, classes_id, page='1'):
+	page_index = get_page_index(page)
+	num = yield from Blog.findNumber('count(id)', where="classes_id='%s'" % classes_id)
 	p = Page(num, page_index)
 	if num == 0:
 		blogs = []
+		date_blogs = []
 	else:
-		blogs = yield from Blog.findByField('classes_name', classes_name)
+		blogs = yield from Blog.findAll(where="classes_id='%s'" % classes_id, limit = (p.offset, p.limit))
 		date_blogs = yield from Blog.findAll(orderBy = 'created_at desc')
 	num = yield from Classification.findNumber('count(id)')
 	if num == 0:
@@ -119,10 +169,49 @@ def api_get_blog_by_classes_name(request, *, classes_name, page='1'):
 	for date_blog in date_blogs:
 		s.add(datetime_convert(date_blog.created_at))
 	date_blogs = list(s)
+	pages = range(1,p.page_count+1)
+	page_flag = 1
 	return {
 		'__template__': 'blogs.html',
 		'blogs' : blogs,
 		'page' : p,
+		'pages' : pages,
+		'page_flag' : page_flag,
+		'classes_id' : classes_id,
+		'classes' : classes,
+		'date_blogs' : date_blogs,
+		'__user__': request.__user__
+	}
+	
+@get('/blogs/classes/{classes_id}/{page}')
+def api_get_blog_by_classes_id_page(request, *, classes_id, page='1'):
+	page_index = get_page_index(page)
+	num = yield from Blog.findNumber('count(id)', where="classes_id='%s'" % classes_id)
+	p = Page(num, page_index)
+	if num == 0:
+		blogs = []
+		date_blogs = []
+	else:
+		blogs = yield from Blog.findAll(where="classes_id='%s'" % classes_id, limit = (p.offset, p.limit))
+		date_blogs = yield from Blog.findAll(orderBy = 'created_at desc')
+	num = yield from Classification.findNumber('count(id)')
+	if num == 0:
+		classes = []
+	else:
+		classes = yield from Classification.findAll(orderBy = 'created_at desc')
+	s = set()
+	for date_blog in date_blogs:
+		s.add(datetime_convert(date_blog.created_at))
+	date_blogs = list(s)
+	pages = range(1,p.page_count+1)
+	page_flag = 1
+	return {
+		'__template__': 'blogs.html',
+		'blogs' : blogs,
+		'page' : p,
+		'pages' : pages,
+		'page_flag' : page_flag,
+		'classes_id' : classes_id,
 		'classes' : classes,
 		'date_blogs' : date_blogs,
 		'__user__': request.__user__
@@ -136,7 +225,7 @@ def api_get_blog_by_date(request, *, blog_date, page='1'):
 	if num == 0:
 		blogs = []
 	else:
-		blogs = yield from Blog.findByField('blog_date', blog_date)
+		blogs = yield from Blog.findAll(where="blog_date='%s'" % blog_date, limit = (p.offset, p.limit))
 		date_blogs = yield from Blog.findAll(orderBy = 'created_at desc')
 	num = yield from Classification.findNumber('count(id)')
 	if num == 0:
@@ -147,10 +236,48 @@ def api_get_blog_by_date(request, *, blog_date, page='1'):
 	for date_blog in date_blogs:
 		s.add(datetime_convert(date_blog.created_at))
 	date_blogs = list(s)
+	pages = range(1,p.page_count+1)
+	page_flag = 2
 	return {
 		'__template__': 'blogs.html',
 		'blogs' : blogs,
 		'page' : p,
+		'pages' : pages,
+		'page_flag' : page_flag,
+		'blog_date' : blog_date,
+		'classes' : classes,
+		'date_blogs' : date_blogs,
+		'__user__': request.__user__
+	}
+	
+@get('/blogs/date/{blog_date}/{page}')
+def api_get_blog_by_date_page(request, *, blog_date, page='1'):
+	page_index = get_page_index(page)
+	num = yield from Blog.findNumber('count(id)', where="blog_date='%s'" % blog_date)
+	p = Page(num, page_index)
+	if num == 0:
+		blogs = []
+	else:
+		blogs = yield from Blog.findAll(where="blog_date='%s'" % blog_date, limit = (p.offset, p.limit))
+		date_blogs = yield from Blog.findAll(orderBy = 'created_at desc')
+	num = yield from Classification.findNumber('count(id)')
+	if num == 0:
+		classes = []
+	else:
+		classes = yield from Classification.findAll(orderBy = 'created_at desc')
+	s = set()
+	for date_blog in date_blogs:
+		s.add(datetime_convert(date_blog.created_at))
+	date_blogs = list(s)
+	pages = range(1,p.page_count+1)
+	page_flag = 2
+	return {
+		'__template__': 'blogs.html',
+		'blogs' : blogs,
+		'page' : p,
+		'pages' : pages,
+		'page_flag' : page_flag,
+		'blog_date' : blog_date,
 		'classes' : classes,
 		'date_blogs' : date_blogs,
 		'__user__': request.__user__
@@ -169,11 +296,29 @@ def get_blog(id, request):
 	comments = yield from Comment.findAll('blog_id=?', [id], orderBy = 'created_at desc')
 	for c in comments:
 		c.html_content = text2html(c.content)
-	blog.html_content = markdown2.markdown(blog.content)
+	blog.html_content = markdown2.markdown(blog.content, extras=["footnotes","cuddled-lists", "fenced-code-blocks"])
+	
+	num = yield from Blog.findNumber('count(id)')
+	date_blogs = []
+	if num > 0:
+		date_blogs = yield from Blog.findAll(orderBy = 'created_at desc')
+	s = set()
+	for date_blog in date_blogs:
+		s.add(date_blog.blog_date)
+	date_blogs = list(s)
+	
+	num = yield from Classification.findNumber('count(id)')
+	if num == 0:
+		classes = []
+	else:
+		classes = yield from Classification.findAll(orderBy = 'created_at desc')
+	
 	return {
 		'__template__':'blog.html',
 		'blog':blog,
 		'comments':comments,
+		'classes' : classes,
+		'date_blogs' : date_blogs,
 		'__user__':request.__user__
 	}
 
@@ -188,6 +333,33 @@ def signin():
 	return {
 		'__template__': 'signin.html',
 	}
+	
+@post('/api/save/passwd')
+def save_passwd(request, *, passwd1, passwd2):
+	if not passwd1:
+		raise APIValueError('passwd1', 'Invalid passwd1.')
+	if not passwd2:
+		raise APIValueError('passwd2', 'Invalid passwd2.')
+		
+	#验证旧密码
+	user = yield from User.find(request.__user__.id)
+	sha1 = hashlib.sha1()
+	sha1.update(user.id.encode('utf-8'))
+	sha1.update(b':')
+	sha1.update(passwd1.encode('utf-8'))
+	if user.passwd != sha1.hexdigest():
+		raise APIValueError('passwd', 'Invalid password.')
+		
+	#保存新密码
+	sha1_passwd = '%s:%s' % (user.id, passwd2)
+	user.passwd = hashlib.sha1(sha1_passwd.encode('utf-8')).hexdigest()
+	yield from user.update()
+	r = web.Response()
+	r.set_cookie(COOKIE_NAME, user2cookie(user, 86400), max_age=86400, httponly=True)
+	user.passwd = '******'
+	r.content_type = 'application/json'
+	r.body = json.dumps(user, ensure_ascii=False).encode('utf-8')
+	return r
 
 @post('/api/authenticate')
 def authenticate(*, email, passwd):
@@ -224,6 +396,14 @@ def signout(request):
 def manage():
 	return 'redirect:/manage/comments'
 	
+@get('/manage/users')
+def manage_users(request, *, page='1'):
+	return {
+		'__template__':'manage_users.html',
+		'page_index':get_page_index(page),
+		'__user__': request.__user__
+	}
+	
 @get('/manage/comments')
 def manage_comments(request, *, page = '1'):
 	return {
@@ -249,10 +429,80 @@ def manage_classes(request, *, page='1'):
 	}
 	
 @get('/manage/blogs/create')
-def manage_create_blog(request):
+def manage_create_blog(request ):
+	drafts = []
+	num = yield from Classification.findNumber('count(id)')
+	if num == 0:
+		classes = []
+		cur_class = '' 
+		blogs = []
+	else:
+		classes = yield from Classification.findAll(orderBy = 'created_at desc')
+		cur_class = classes[0].id  #分类id是唯一的
+		blogs = yield from Blog.findAll(where="classes_id='%s'" % cur_class)
+		draftNum = yield from Draft.findNumber('count(id)', where="classes_id='%s'" % cur_class)
+		if draftNum == 1:
+			drafts = yield from Draft.findAll(where="classes_id='%s'" % cur_class)
+		
 	return {
-		'__template__':'manage_blog_edit.html',
+		'__template__':'create_blog.html',
 		'id':'',
+		'classes':classes,
+		'cur_class':cur_class,
+		'blogs':blogs,
+		'drafts':drafts,
+		'isDraft': 0,
+		'action':'/api/blogs',
+		'__user__': request.__user__
+	}
+	
+@get('/manage/blogs/create/{classes_id}')
+def manage_create_blog_class(classes_id, request , * ,isDraft = 0):
+	isDraft = isDraft;
+	num = yield from Classification.findNumber('count(id)')
+	drafts = []
+	if num == 0:
+		classes = []
+	else:
+		classes = yield from Classification.findAll(orderBy = 'created_at desc')
+		blogs = yield from Blog.findAll(where="classes_id='%s'" % classes_id)
+		draftNum = yield from Draft.findNumber('count(id)', where="classes_id='%s'" % classes_id)
+		if draftNum == 1:
+			drafts = yield from Draft.findAll(where="classes_id='%s'" % classes_id)
+		
+	return {
+		'__template__':'create_blog.html',
+		'id':'',
+		'classes':classes,
+		'cur_class':classes_id,
+		'blogs':blogs,
+		'drafts':drafts,
+		'isDraft': isDraft,
+		'action':'/api/blogs',
+		'__user__': request.__user__
+	}
+	
+@get('/manage/blogs/edit/{classes_id}')
+def manage_edit_blog(classes_id, request, *, id):
+	isDraft = 0;
+	num = yield from Classification.findNumber('count(id)')
+	drafts = []
+	if num == 0:
+		classes = []
+	else:
+		classes = yield from Classification.findAll(orderBy = 'created_at desc')
+		blogs = yield from Blog.findAll(where="classes_id='%s'" % classes_id)
+		draftNum = yield from Draft.findNumber('count(id)', where="classes_id='%s'" % classes_id)
+		if draftNum == 1:
+			drafts = yield from Draft.findAll(where="classes_id='%s'" % classes_id)
+	return {
+		'__template__':'create_blog.html',
+		'id':id,
+		'classes':classes,
+		'cur_class':classes_id,
+		'blogs':blogs,
+		'drafts':drafts,
+		'isDraft': isDraft,
 		'action':'/api/blogs',
 		'__user__': request.__user__
 	}
@@ -266,29 +516,12 @@ def manage_create_classes(request):
 		'__user__': request.__user__
 	}
 	
-@get('/manage/blogs/edit')
-def manage_edit_blog(request, *, id):
-	return {
-		'__template__':'manage_blog_edit.html',
-		'id':id,
-		'action':'/api/blogs/%s' % id,
-		'__user__': request.__user__
-	}
-	
 @get('/manage/classes/edit')
 def manage_edit_classes(request, *, id):
 	return {
 		'__template__':'manage_classes_edit.html',
 		'id':id,
 		'action':'/api/classes/%s' % id,
-		'__user__': request.__user__
-	}
-	
-@get('/manage/users')
-def manage_users(request, *, page='1'):
-	return {
-		'__template__':'manage_users.html',
-		'page_index':get_page_index(page),
 		'__user__': request.__user__
 	}
 	
@@ -334,6 +567,40 @@ def api_delete_comments(id, request):
 		raise APIResourceNotFoundError('Comment')
 	yield from c.remove()
 	return dict(id=id)
+	
+@get('/userinfo/{id}')
+def userinfo(request, *, id):
+	return {
+		'__template__':'userinfo.html',
+		'edit_flag':0,
+		'created_date': get_datetime(request.__user__.created_at),
+		'__user__': request.__user__
+	}
+	
+@get('/userinfo/edit/{id}')
+def userinfo_edit(request, *, id):
+	return {
+		'__template__':'userinfo.html',
+		'edit_flag':1,
+		'created_date': get_datetime(request.__user__.created_at),
+		'__user__': request.__user__
+	}
+	
+@get('/userinfo/save')
+def userinfo_save(request, *, id):
+	return {
+		'__template__':'userinfo.html',
+		'edit_flag':0,
+		'created_date': get_datetime(request.__user__.created_at),
+		'__user__': request.__user__
+	}
+	
+@get('/mdf-passwd')
+def edit_passwd(request):
+	return {
+		'__template__':'mdf-passwd.html',
+		'__user__': request.__user__
+	}
 	
 @get('/api/users')
 def api_get_users(*, page='1'):
@@ -392,9 +659,61 @@ def api_get_blog(*, id):
 def api_get_classes(*, id):
 	classifition = yield from Classification.find(id)
 	return classifition
+	
+@post('/api/save/userinfo')
+def api_save_userinfo(request, *, name):
+	if not name or not name.strip():
+		raise APIValueError('name')
+	user = yield from User.find(request.__user__.id)
+	user.name = name
+	yield from user.update()
+	
+	blogs = yield from Blog.findByField('user_id',request.__user__.id)
+	if blogs != None:
+		for blog in blogs:
+			blog.user_name = name
+			yield from blog.update()
+	
+	comments = yield from Comment.findByField('user_id',request.__user__.id)
+	if comments != None:
+		for comment in comments:
+			comment.user_name = name
+			yield from comment.update()
+	
+	r = web.Response()
+	r.set_cookie(COOKIE_NAME, user2cookie(user, 86400), max_age=86400, httponly=True)
+	user.passwd = '******'
+	r.content_type = 'application/json'
+	r.body = json.dumps(user, ensure_ascii=False).encode('utf-8')
+	return r
+	
+@post('/api/drafts')
+def api_edit_draft(request, * , name, summary, content, classes_id):
+	check_admin(request)
+	drafts = yield from Draft.findAll(where="classes_id='%s'" % classes_id)
+	if len(drafts) > 0:
+		draft = yield from Draft.find(drafts[0].id)
+		draft.name = name
+		draft.summary = summary
+		draft.content = content
+		yield from draft.update()
+	else:
+		draft = Draft(user_id=request.__user__.id, user_name=request.__user__.name, user_image=request.__user__.image, name=name.strip(), summary=summary.strip(), content=content.strip(), classes_id=classes_id.strip())
+		yield from draft.save()
+	return draft
+	
+@get('/api/drafts/{classes_id}')
+def api_get_draft(request, *, classes_id):
+	check_admin(request)
+	drafts = yield from Draft.findAll(where="classes_id='%s'" % classes_id)
+	if len(drafts) > 0:
+		draft = yield from Draft.find(drafts[0].id)
+		return draft
+	else:
+		return {'name':''}
 
 @post('/api/blogs')
-def api_create_blog(request, * , name, summary, content, classes_name):
+def api_create_blog(request, * , name, summary, content, classes_id):
 	check_admin(request)
 	if not name or not name.strip():
 		raise APIValueError('name', 'name cannot be empty.')
@@ -404,21 +723,21 @@ def api_create_blog(request, * , name, summary, content, classes_name):
 		raise APIValueError('content', 'content cannot be empty.')
 	dt = datetime.fromtimestamp(time.time())
 	blog_date = '%04d%02d' % (dt.year, dt.month)
-	blog = Blog(user_id=request.__user__.id, user_name=request.__user__.name, user_image=request.__user__.image, name=name.strip(), summary=summary.strip(), content=content.strip(), classes_name=classes_name.strip(), blog_date=blog_date)
+	
+	classification = yield from Classification.find(classes_id)
+	
+	blog = Blog(user_id=request.__user__.id, user_name=request.__user__.name, user_image=request.__user__.image, name=name.strip(), summary=summary.strip(), content=content.strip(), classes_id=classes_id.strip(), classes_name = classification.name.strip(), blog_date=blog_date)
 	yield from blog.save()
+	
+	#对应的分类的草稿要删掉
+	drafts = yield from Draft.findAll(where="classes_id = '%s'" % classes_id)
+	if len(drafts) == 1:
+		draft = yield from Draft.find(drafts[0].id)
+		yield from draft.remove()
 	return blog
 	
-@post('/api/classes')
-def api_create_classes(request, *, name):
-	check_admin(request)
-	if not name or not name.strip():
-		raise APIValueError('name', 'name cannot be empty.')
-	classifition = Classification(name = name.strip())
-	yield from classifition.save()
-	return classifition
-
 @post('/api/blogs/{id}')
-def api_update_blog(id, request, *, name, summary, content, classes_name):
+def api_update_blog(id, request, *, name, summary, content, classes_id):
 	check_admin(request)
 	blog = yield from Blog.find(id)
 	if not name or not name.strip():
@@ -430,9 +749,20 @@ def api_update_blog(id, request, *, name, summary, content, classes_name):
 	blog.name = name.strip()
 	blog.summary = summary.strip()
 	blog.content = content.strip()
-	blog.classes_name = classes_name.strip()
+	blog.classes_id = classes_id.strip()
+	classification = yield from Classification.find(classes_id)
+	blog.classes_name = classification.name.strip()
 	yield from blog.update()
 	return blog
+	
+@post('/api/classes')
+def api_create_classes(request, *, name):
+	check_admin(request)
+	if not name or not name.strip():
+		raise APIValueError('name', 'name cannot be empty.')
+	classifition = Classification(name = name.strip())
+	yield from classifition.save()
+	return classifition
 	
 @post('/api/classes/{id}')
 def api_update_classes(id, request, *, name):
@@ -442,6 +772,13 @@ def api_update_classes(id, request, *, name):
 		raise APIValueError('name', 'name cannot be empty.')
 	classifition.name = name.strip()
 	yield from classifition.update()
+	
+	blogs = yield from Blog.findAll(where="classes_id = '%s'" % id)
+	for eachBlog in blogs:
+		blog = yield from Blog.find(eachBlog.id)
+		blog.classes_name = name.strip()
+		yield from blog.update()
+	
 	return classifition
 
 @post('/api/blogs/{id}/delete')
@@ -457,3 +794,49 @@ def api_delete_classes(request, *, id):
 	classifition = yield from Classification.find(id)
 	yield from classifition.remove()
 	return dict(id=id)
+
+#用户上传头像
+@post('/static/userimg')
+def upload_userimg(request, *, FILES):
+	filename = FILES.filename
+	file = FILES.file  #文件缓存对象
+	content = file.read()
+	imgPath = '/static/img/' + request.__user__.id + '.' + filename
+	path = '.' + imgPath
+	with open(path, 'wb+') as dest:
+		dest.write(content)
+	#更新user表
+	user = yield from User.find(request.__user__.id)
+	user.image = imgPath
+	yield from user.update()
+	
+	#更新blogs表
+	blogs = yield from Blog.findAll(where="user_id = '%s'" % request.__user__.id)
+	for b in blogs:
+		blog = yield from Blog.find(b.id)
+		blog.user_image = imgPath
+		yield from blog.update()
+	
+	#更新comments表
+	comments = yield from Comment.findAll(where="user_id = '%s'" % request.__user__.id)
+	for c in comments:
+		comment = yield from Comment.find(c.id)
+		comment.user_image = imgPath
+		yield from comment.update()
+	
+	return user.image
+
+#写文章时上传图片
+@post('/static/img')
+def upload_img(request, *, FILES):
+	filename = FILES.filename
+	file = FILES.file
+	content = file.read()
+	imgPath = '/static/img/' + filename
+	path = '.' + imgPath
+	with open(path, 'wb+') as dest:
+		dest.write(content)
+	#如果图片名字已存在是否重新创建
+	
+	return imgPath
+	

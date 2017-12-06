@@ -3,8 +3,14 @@
 {% block title %}博客{% endblock %}
 
 {% block beforehead %}
-
+<script src="/static/js/components/pagination.js"></script>
 <script>
+$(function(){
+	$("#blog_list").removeClass("uk-active");
+	$("#blog_edit").removeClass("uk-active");
+	$("#manages").addClass("uk-active");
+	$("#info").removeClass("uk-active");
+});
 function initVM(data) {
 	$('#vm').show();
     var vm = new Vue({
@@ -15,7 +21,7 @@ function initVM(data) {
         },
         methods: {
             edit_blog: function (blog) {
-                location.assign('/manage/blogs/edit?id=' + blog.id);
+                location.assign('/manage/blogs/edit/' + blog.classes_id + '?id=' + blog.id);
             },
             delete_blog: function (blog) {
                 if (confirm('确认要删除“' + blog.name + '”？删除后不可恢复！')) {
@@ -30,6 +36,19 @@ function initVM(data) {
         }
     });
 }
+
+function initPage(data) {
+	var settings = {
+		items:data.page.item_count,
+		itemsOnPage:data.page.page_size,
+		currentPage:data.page.page_index-1,
+		onSelectPage : function(pageIndex){
+			location.assign('/manage/blogs?page=' + (pageIndex+1));
+		}
+	};
+	var pagination = UIkit.pagination($("#page-pagination"), settings);
+}
+
 $(function() {
     getJSON('/api/blogs', {
         page: {{ page_index }}
@@ -39,8 +58,10 @@ $(function() {
         }
         $('#loading').hide();
         initVM(results);
+		initPage(results);
     });
 });
+
 </script>
 
 {% endblock %}
@@ -86,7 +107,7 @@ $(function() {
 						<span v-text="blog.classes_name"></span>
 					</td>
                     <td>
-                        <a target="_blank" v-attr="href: '/user/'+blog.user_id" v-text="blog.user_name"></a>
+                        <a target="_blank" v-attr="href: '/userinfo/'+blog.user_id" v-text="blog.user_name"></a>
                     </td>
                     <td>
                         <span v-text="blog.created_at.toDateTime()"></span>
@@ -98,8 +119,8 @@ $(function() {
                 </tr>
             </tbody>
         </table>
-
-        <div v-component="pagination" v-with="page"></div>
+		<ul id="page-pagination" class="uk-pagination">
+		</ul>
     </div>
 
 {% endblock %}
