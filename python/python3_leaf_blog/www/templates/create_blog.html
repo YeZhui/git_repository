@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html class="uk-height-1-1">
+<head>
+    <meta charset="utf-8" />
+    <title>写博客 - 晟夏的叶的博客</title>
+    <link rel="stylesheet" href="/static/css/uikit.summerEx.css" />
+    <link rel="stylesheet" href="/static/css/summer.css" />
+    <script src="/static/js/jquery-2.1.4.min.js"></script>
+    <script src="/static/js/summer.js"></script>
+    <script src="/static/js/uikit.min.js"></script>
+    <script src="/static/js/vue.min.js"></script>
+	<script src="/static/js/sha1.min.js"></script>
+	<script src="/static/js/sticky.min.js"></script>
+	
+	<link rel="icon" href="/favicon.ico" type="image/x-icon"/>
+	
+	<link rel="stylesheet" href="/static/editor.md-master/css/editormd.min.css"/>
+	<script src="/static/editor.md-master/js/jquery.min.js"></script>
+	<script src="/static/editor.md-master/lib/marked.min.js"></script>
+	<script src="/static/editor.md-master/lib/prettify.min.js"></script>
+	<script src="/static/editor.md-master/lib/raphael.min.js"></script>
+	<script src="/static/editor.md-master/lib/underscore.min.js"></script>
+	<script src="/static/editor.md-master/lib/sequence-diagram.min.js"></script>
+	<script src="/static/editor.md-master/lib/flowchart.min.js"></script>
+	<script src="/static/editor.md-master/lib/jquery.flowchart.min.js"></script>
+	<script src="/static/editor.md-master/src/editormd.js"></script>
+
+	<script>
+
+	var
+		ID = '{{ id }}',
+		cur_class = '{{ cur_class }}',
+		isDraft = '{{ isDraft }}',
+		action = '{{ action }}';
+	function initVM(blog) {
+		var vm = new Vue({
+			el: '#vm',
+			data: blog
+		});
+		$('#vm').show();
+	}
+	
+	function saveBlog() {
+		//add by guanyezhui 20171129
+		var postAction = action;
+		if ( isDraft != 1 ) {
+			postAction = action + '/' + ID;
+		}
+		var content = testEditor.getMarkdown();
+		if ( content == undefined) {
+			content = '';
+		}
+		postJSON(postAction, {
+				name: document.getElementById('markdown-title').value,
+				summary:document.getElementById('markdown-summary').value,
+				content:content,
+				classes_id:cur_class,
+				is_draft: isDraft
+			}, function (err, r) {
+			if (err) {
+				UIkit.modal.alert(err.message);
+			}
+			else {
+				if ( isDraft == 0 ) {
+					//refresh();
+					return location.assign('/');
+				}
+				else {
+					//return location.assign('/manage/blogs/create/' + cur_class);
+					return location.assign('/');
+				}
+			}
+		});
+	}
+	
+	function blogClick(ID) {
+		return location.assign('/manage/blogs/edit/'+ cur_class +'?id=' + ID);
+	}
+	
+	function createBlogLi(cur_class) {
+		var ulBlog = document.getElementById('ul-blog');
+		var str = new String(ulBlog.innerHTML);
+		if ( str.search('uk-icon-file-text-o') != -1) {
+			getDraft(cur_class);
+			return;
+		}
+		
+		postJSON("/api/drafts", {
+				name: '',
+				summary:'',
+				content:'',
+				classes_id:cur_class
+			}, function (err, r) {
+			if (err) {
+				//alert(err.message);
+				UIkit.modal.alert(err.message);
+			}
+			else {
+				getDraft(cur_class);
+			}
+		});
+	}
+	
+	function getDraft(cur_class) {
+		return location.assign('/manage/blogs/create/' + cur_class + '?isDraft=1');
+	}
+	
+	function addNewClass() {
+		var newClass = document.getElementById('new-class');
+		if ( newClass.value != "" ) {
+			postJSON("/api/classes", {name: newClass.value,}, function (err, r) {
+					if (err) {
+							UIkit.modal.alert(err.message);
+						}
+						else {
+							return location.assign('/manage/blogs/create/' + className);
+						}
+			});
+		}
+		else {
+			alert('请输入分类名');
+			//UIkit.modal.alert("请输入分类名!");
+		}
+	}
+	
+	function cancelAdd() {
+		var addClass = document.getElementById('add-class');
+		addClass.removeChild(addClass.childNodes[0]);
+		addClass.removeChild(addClass.childNodes[0]);
+	}
+	
+	function createClass() {
+		var addClass = document.getElementById('add-class');
+		var formRow1 = document.createElement('div');
+		formRow1.className = 'uk-form-row';
+		formRow1.id = 'formrow1';
+		var newClass = document.createElement('input');
+		newClass.setAttribute("type", "text");
+		newClass.setAttribute("placeholder", "请输入分类名...");
+		newClass.id = 'new-class';
+		newClass.className = 'uk-width-1-1';
+		formRow1.appendChild(newClass)
+
+		var formRow2 = document.createElement('div');
+		formRow2.className = 'uk-form-row';
+		formRow2.id = 'formRow2';
+		var span = document.createElement('span');
+		
+		var okButton = document.createElement('button');
+		okButton.className = 'uk-button uk-button-success';
+		okButton.onclick = addNewClass;
+		okButton.setAttribute('type','submit');
+		okButton.innerHTML = "<i class=\"uk-icon-check\"></i>提交";
+		
+		var cancelButton = document.createElement('button');
+		cancelButton.className = 'uk-button';
+		cancelButton.setAttribute('type','button');
+		cancelButton.onclick = cancelAdd;
+		cancelButton.innerHTML = '<i class="uk-icon-close"></i><a href="">取消</a>';
+		
+		span.appendChild(okButton);
+		span.appendChild(cancelButton);
+		formRow2.appendChild(span);
+		
+		addClass.appendChild(formRow1);
+		addClass.appendChild(formRow2);
+	}
+	
+	function saveDraft() {
+		var ulBlog = document.getElementById('ul-blog');
+		var str = new String(ulBlog.firstElementChild.innerHTML);
+		if ( isDraft != 1 ) {
+			UIkit.modal.alert("此文章不是草稿，不能保存草稿，请直接发布，谢谢！");
+		}
+		if ( str.search('uk-icon-file-text-o') == -1 ) {
+			return;
+		}
+		
+		postJSON("/api/drafts", {
+				name: document.getElementById('markdown-title').value,
+				summary:document.getElementById('markdown-summary').value,
+				content:testEditor.getMarkdown(),
+				classes_id:cur_class
+			}, function (err, r) {
+			if (err) {
+				UIkit.modal.alert(err.message);
+			}
+			else {
+				return location.assign('/manage/blogs/create/' + cur_class);
+			}
+		});
+	}
+	
+	$(function () {
+		var settings = {
+			markdown:true,
+			lblPreview:'预览'
+		};
+		if (ID) {
+			getJSON('/api/blogs/' + ID, function (err, blog) {
+				if (err) {
+					return UIkit.modal.alert(err);
+				}
+				initVM(blog);
+			});
+		}
+		else {
+			if (isDraft == 1) {
+				settings = {
+					markdown:true,
+					lblPreview:'预览',
+					isDraft:true
+				};
+				var ulBlog = document.getElementById('ul-blog');
+				var str = new String(ulBlog.innerHTML);
+				if ( str.search('uk-icon-file-text-o') != -1) {
+					ulBlog.firstElementChild.setAttribute('style','background:#F4F4F4;');
+				}
+				getJSON('/api/drafts/' + cur_class, function (err, draft) {
+					if (err) {
+						return fatal(err);
+					}
+					initVM( {
+						name: draft.name,
+						summary: draft.summary,
+						content: draft.content
+					});
+				});
+			}
+			else {
+				initVM( {
+					name: '',
+					summary: '',
+					content: ''
+				});
+			}
+		}
+	});
+	</script>
+	<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?bf304bcb3a1444b2650dda7a0fec6a83";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+</head>
+<body class="uk-height-1-1">
+	<div class="uk-grid uk-grid-collapse uk-height-1-1">
+		<div class="uk-width-1-6" style="background: #6699CC;color: #ffffff;">
+			</br>
+			</br>
+			<center><button class="uk-button uk-width-7-10" style="border-radius: 20px;"><a href="/">回首页</a></button></center>
+			</br>
+			<a onclick="createClass()" class="uk-button"><i class="uk-icon-plus"></i>新分类</a>
+			</br>
+			</br>
+			<form id="add-class" class="uk-form"></form>
+			<ul class="uk-nav uk-nav-side" >
+				<li class="uk-nav-header">分类列表</li>
+				{% for classification in classes %}
+				{% if classification.id == cur_class %}
+				<li class="uk-active"><a href="/manage/blogs/create/{{ classification.id }}">{{ classification.name }}</a></li>
+				{% else %}
+				<li><a href="/manage/blogs/create/{{ classification.id }}">{{ classification.name }}</a></li>
+				{% endif %}
+				{% endfor %}
+			</ul>
+		</div>
+		
+		<div class="uk-width-1-6">
+			</br>
+			</br>
+			<div class="uk-text-center"><a onclick="createBlogLi('{{ cur_class }}')" class="uk-button uk-container-center"><i class="uk-icon-plus-circle"></i>新建博客</a></div>
+			</br>
+			<ul id="ul-blog" class="uk-nav uk-nav-side">
+				<!-- 如有保存的草稿,需显示出来-->
+				{% for draft in drafts %}
+				<li>
+					<a href="javascript:getDraft('{{ cur_class }}')" style="color:black;">
+						<div class="uk-grid uk-grid-collapse">
+							<div class="uk-width-1-6 ">
+								<i class="uk-icon-file-text-o uk-icon-small uk-margin-top uk-margin-bottom"></i>
+							</div>
+							<div class="uk-width-5-6">
+								<p class="uk-margin-small-top uk-margin-small-bottom">保存的草稿</br>保存的草稿</p>
+							</div>
+						</div>
+					</a>
+				</li>
+				{% endfor %}
+				{% for blog in blogs %}
+				{% if blog.id == id %}
+				<li class="uk-active">
+				{% else %}
+                <li>
+				{% endif %}
+					<a href="javascript:blogClick('{{ blog.id }}')" style="color:black;">
+						<div class="uk-grid uk-grid-collapse">
+							<div class="uk-width-1-6 ">
+								<i class="uk-icon-file-text uk-icon-small uk-margin-top uk-margin-bottom"></i>
+							</div>
+							<div class="uk-width-4-6">
+								<p class="uk-margin-small-top uk-margin-small-bottom">{{ blog.name }}</br>{{ blog.summary }}</p>
+							</div>
+						</div>
+					</a>
+				</li>
+				{% endfor %}
+            </ul>
+		</div>
+		
+		<div id="vm" class="uk-width-4-6">
+			</br>
+			<form class="uk-form uk-form-stacked">
+				<div class="uk-alert uk-alert-danger uk-hidden"></div>
+				<div class="uk-form-row">
+					<div class="uk-form-controls">
+						<input id="markdown-title" v-model="name" name="name" type="text" placeholder="标题" class="uk-width-1-1">
+					</div>
+				</div>
+				<div class="uk-form-row">
+					<div class="uk-form-controls">
+						<textarea id="markdown-summary" v-model="summary" name="summary" placeholder="摘要" class="uk-width-1-1"></textarea>
+					</div>
+				</div>
+				<div id="my-editormd">
+					<textarea style="display:none;" placeholder="正文内容" v-model="content"></textarea>
+				</div>
+			</form>
+		</div>
+	</div>
+		<script type="text/javascript">
+		var testEditor;
+	$(function() {
+		testEditor = editormd("my-editormd",{
+			placeholder : "从这里开始编写您的文章...",
+			width   : "100%",
+            height  : "490",
+			path: "/static/editor.md-master/lib/",
+			saveHTMLToTextarea:true,
+			codeFold : true,
+            htmlDecode : true,
+            tex : true,
+            taskList : true,
+            emoji : true,
+            flowChart : true,
+            sequenceDiagram : true,
+			imageUpload: true,
+			imageFormats: ["jpg", "JPG", "jpeg", "gif", "png", "bmp", "webp"],
+			imageUploadURL: "/upload/img",
+			toolbarIcons : function() {
+				return [
+            "undo", "redo", "|", 
+            "bold", "del", "italic", "quote", "ucwords", "uppercase", "lowercase", "|", 
+            "h1", "h2", "h3", "h4", "h5", "h6", "|", 
+            "list-ul", "list-ol", "hr", "|",
+            "link", "reference-link", "image", "code", "preformatted-text", "code-block", "table", "datetime", "emoji", "html-entities", "pagebreak", "|",
+            "goto-line", "watch", "preview", "fullscreen", "clear", "search", "|",
+            "help", "info", "|", "draftIcon", "saveIcon"]
+			},
+			toolbarIconTexts : {
+				draftIcon : "保存草稿",
+				saveIcon : "发布"
+			},
+			toolbarHandlers : {
+				saveIcon : function(cm, icon, cursor, selection) {
+					saveBlog();
+				},
+				draftIcon : function(cm, icon, cursor, selection) {
+					saveDraft();
+				}
+			},
+			lang : {
+                toolbar : {
+                    saveIcon : "发布博客",
+					draftIcon : "保存草稿"
+                }
+            },
+			onload: function () {
+				editormd.loadPlugin("/static/editor.md-master/plugins/image-dialog/image-handle-paste", function(){
+					testEditor.imagePaste();
+                });
+			}
+		});
+	});
+	
+	</script>
+</body>
+</html>

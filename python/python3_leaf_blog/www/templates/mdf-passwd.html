@@ -1,0 +1,103 @@
+{% extends '__base__.html' %}
+
+{% block title %}修改密码{% endblock %}
+
+{% block beforehead %}
+<script>
+$(function(){
+	$("#blog_list").removeClass("uk-active");
+	$("#blog_edit").removeClass("uk-active");
+	$("#manages").removeClass("uk-active");
+	$("#info").addClass("uk-active");
+});
+$(function () {
+    var vm = new Vue({
+        el: '#vm',
+        data: {
+			passwd1: '',
+			passwd2: '',
+			passwd3: ''
+        },
+        methods: {
+            submit: function (event) {
+                event.preventDefault();
+				email = document.getElementById('label-email').innerHTML
+                var $form = $('#vm');
+                if (! this.passwd1.trim()) {
+                    return $form.showFormError('请输入旧的密码');
+                }
+				if (! this.passwd2.trim()) {
+                    return $form.showFormError('请输入新的密码');
+                }
+				if (! this.passwd3.trim()) {
+                    return $form.showFormError('请重复输入新的密码');
+                }
+				if ( this.passwd2 != this.passwd3) {
+					return $form.showFormError('两次输入新的密码不一致，请重新输入!')
+				}
+                $form.postJSON('/api/save/passwd', {
+                    passwd1: CryptoJS.SHA1(email + ':' + this.passwd1).toString(),
+					passwd2: CryptoJS.SHA1(email + ':' + this.passwd2).toString()
+                }, function (err, r) {
+                    if (err) {
+                        return $form.showFormError(err);
+                    }
+					alert('密码修改成功!');
+                    return location.assign('/');
+                });
+            }
+        }
+    });
+    $('#vm').show();
+});
+</script>
+{% endblock %}
+
+{% block content %}
+
+	<div class="uk-width-medium-3-5">
+		<form id="vm" v-on="submit: submit" class="uk-form">
+			<div class="uk-form-row">
+				<span>
+					<label class="uk-form-label">电子邮箱:</label>
+					<label id="label-email" class="uk-form-label">{{ __user__.email }}</label>
+				</span>
+			</div>
+			<div class="uk-form-row">
+				<label class="uk-form-label">用户名:{{ __user__.name }}</label>
+			</div>
+			<div class="uk-form-row">
+				<span>
+					<label class="uk-form-label">旧密码:</label>
+					<input v-model="passwd1" type="password" maxlength="50" placeholder="旧密码">
+				</span>
+            </div>
+			<div class="uk-form-row">
+				<span>
+					<label class="uk-form-label">新密码:</label>
+					<input v-model="passwd2" type="password" maxlength="50" placeholder="新密码">
+				</span>
+            </div>
+			<div class="uk-form-row">
+				<span>
+					<label class="uk-form-label">重复新密码:</label>
+					<input v-model="passwd3" type="password" maxlength="50" placeholder="重复新密码">
+				</span>
+            </div>
+			<div class="uk-form-row">
+				<span>
+					<button type="submit" class="uk-button uk-button-success"><i class="uk-icon-check"></i>保存</button>
+					<button class="uk-button" type="button"><i class="uk-icon-close"></i><a href="/">取消</a></button>
+				</span>
+			</div>
+		</form>
+	</div>
+	<div class="uk-width-medium-2-5">
+		<div class="uk-panel uk-panel-box">
+            <div class="uk-text-center">
+                <img class="uk-border-circle" src="{{ __user__.image }}">
+            </div>
+        </div>
+	</div>
+
+{% endblock %}
