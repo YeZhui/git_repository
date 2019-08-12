@@ -1,0 +1,115 @@
+/**index.wxss**/
+@import "./assets/iconfont.wxss";
+
+.row-line{
+    display: flex;
+    flex-direction: row;
+    background-color: white;
+    border-bottom-style: solid;
+    border-color: #CDC8B1;
+    border-width: 1px;
+}
+.weui-btn{
+    margin-top:20px;
+}
+.date-label{
+    width:60px;
+    text-align: center;
+    height: 30px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+.date-select{
+    width:140px;
+    text-align: center;
+    height: 30px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-right-style: solid;
+    border-color: #CDC8B1;
+    border-width: 1px;
+}
+.weather-label{
+    width:60px;
+    text-align: center;
+    height: 30px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+.weather-select{
+    width:115px;
+    text-align: center;
+    height: 30px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+.address-label{
+    width:60px;
+    text-align: center;
+    height: 30px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+.address-input{
+    width:140px;
+    text-align: center;
+    height: 30px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-right-style: solid;
+    border-color: #CDC8B1;
+    border-width: 1px;
+}
+.comm-label{
+    width:60px;
+    text-align: center;
+    height: 30px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+.comm-input{
+    width:115px;
+    text-align: center;
+    height: 30px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+page {
+    background-color: #4876FF;
+}
+.ql-container {
+    box-sizing: border-box;
+    padding: 12px 15px;
+    width: 100%;
+    min-height: 30vh;
+    height: auto;
+    background: #fff;
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom:5px;
+  }
+  .toolbar {
+    box-sizing: border-box;
+    /* border: 1px solid #ccc; */
+    border-bottom: 0;
+    font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  }
+  .iconfont {
+    display: inline-block;
+    padding: 8px 8px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 20px;
+  }
+  .today-think{
+      background-color: #fff;
+      margin-top: 20px;
+  }
+  .today-say-label{
+      text-align: center;
+      width: 120px;
+  }
+  .today-say-input{
+    text-align: left;
+  }

@@ -1,0 +1,23 @@
+/* pages/writing/writing.wxss */
+page {
+  background-color: #4876FF;
+}
+.page__title{
+  text-align: center;
+  color:#CD0000;
+  font-weight: 600;
+  line-height: 50px;
+  margin-top:15px;
+  margin-bottom:30rpx;
+  width:90%;
+  border-style:solid;
+  border-color:#a1a1a1;
+  border-width:2px;
+  border-radius: 25px;
+  background:white;
+  margin-right: 5%;
+  margin-left:5%;
+}
+.weui-cells__title{
+  color:red;
+}

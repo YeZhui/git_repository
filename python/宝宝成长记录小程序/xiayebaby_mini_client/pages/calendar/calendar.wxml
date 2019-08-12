@@ -1,0 +1,28 @@
+<!--pages/calendar/calendar.wxml-->
+<view class="swiper">
+  <view class="page-body">
+    <view class="page-section">
+      <calendar calendar-style="calendar" binddayClick="dayClick" header-style="header" board-style="board" show-more-days="true" weeks-type="cn" lunar="true" cell-size="45" days-color="{{daysStyle}}" />
+    </view>
+    <view class="page-section" style="margin-top: 40rpx;margin-bottom: 0;">
+
+        <!--view class="weui-cell weui-cell_switch">
+          <view class="weui-cell__bd">月经第一天</view>
+          <view class="weui-cell__ft">
+            <switch checked="{{mensesStart}}" bindchange="changeMensesStart" data-property-name="mensesStart" />
+          </view>
+        </view>
+        <view class="weui-cell weui-cell_switch">
+          <view class="weui-cell__bd">月经最后一天</view>
+          <view class="weui-cell__ft">
+            <switch checked="{{mensesEnd}}" bindchange="changeMensesEnd" data-property-name="mensesEnd" />
+          </view>
+        </view-->
+        <view class="page__bd page__bd_spacing">
+          <button class="weui-btn" type="primary" bindtap="addCommDay">添加纪念日</button>
+          <button class="weui-btn" type="default" bindtap="showCommDay">查看纪念日</button>
+        </view>
+
+    </view>
+  </view>
+</view>

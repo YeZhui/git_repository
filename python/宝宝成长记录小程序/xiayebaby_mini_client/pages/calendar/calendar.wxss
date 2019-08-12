@@ -1,0 +1,37 @@
+/* pages/calendar/calendar.wxss */
+/*整个日历组件样式*/
+.calendar{
+  background-color: #ffffff;
+  padding-top:10px;
+  border-radius:15px;
+  outline-style: solid;
+  outline-color: #ffffff;
+  margin-bottom:15px;
+}
+
+/*日历头部样式*/
+.header {
+    font-size: large;
+    color: #59518d;
+    background-color: #ffffff;
+}
+
+/*日历面板样式*/
+.board {
+  background-color: #ffffff;
+  color:#FF6666;
+  font-size: large;
+}
+
+page {
+  background-color: #4876FF;
+}
+
+.page-body{
+  padding-top:0px;
+}
+
+.page-section{
+  width: 100%;
+  margin-bottom: 30rpx;
+}

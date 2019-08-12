@@ -1,0 +1,7 @@
+{
+  "usingComponents":{
+    "calendar":"plugin://calendar/calendar"
+  },
+  "backgroundColor": "#4876FF",
+  "navigationBarBackgroundColor": "#4876FF"
+}
