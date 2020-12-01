@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>favicon.ico</file>
+        <file>favicon32.ico</file>
+        <file>baobao.JPG</file>
+    </qresource>
+</RCC>
